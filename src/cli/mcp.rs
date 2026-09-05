@@ -1,11 +1,4 @@
-//! `aoe mcp` CLI: inspect the effective MCP server set (#1996).
-//!
-//! Mirrors the read model the web and TUI surfaces render, so a user can debug
-//! "which MCP servers will my agent reach, and where did each come from".
-//! Top-level rather than under the `aoe acp` group, because inspecting config
-//! is useful before any session runs.
-//! Every value is redacted: command/args/url identify a server, env and header
-//! VALUES are reduced to names.
+//! Inspect MCP configuration or expose the daemon's session tools over stdio.
 
 use anyhow::Result;
 use clap::Subcommand;
@@ -14,6 +7,8 @@ use crate::session::mcp::mcp_model::{resolve_surface, McpSurfaceView};
 
 #[derive(Subcommand, Debug)]
 pub enum McpCommands {
+    /// Expose agent creation, messaging, queues, and output over MCP stdio.
+    Serve(super::mcp_server::ServeArgs),
     /// List the merged effective MCP server set with provenance, plus any
     /// conflicts and servers kept after removal from a native config.
     List(McpListArgs),
@@ -33,6 +28,7 @@ pub struct McpListArgs {
 
 pub async fn run(profile: &str, command: McpCommands) -> Result<()> {
     match command {
+        McpCommands::Serve(args) => super::mcp_server::run(&args).await,
         McpCommands::List(args) => list(profile, args),
     }
 }

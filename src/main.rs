@@ -116,6 +116,14 @@ async fn main() -> Result<()> {
         }
     };
 
+    // MCP owns stdout and must not run local startup migrations or logging.
+    if let Some(Commands::Mcp {
+        command: cli::mcp::McpCommands::Serve(ref args),
+    }) = cli.command
+    {
+        return cli::mcp_server::run(args).await;
+    }
+
     // With the `aoe.web` plugin disabled, a fresh `aoe serve` start is treated
     // as an unrecognized subcommand. Done here, before any logging/app-dir side
     // effects, so a rejected start creates no serve log or ProcessContext.

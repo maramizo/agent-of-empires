@@ -211,3 +211,62 @@ re-checked on every session start so a changed file re-prompts. See Project-loca
 servers above. The trust fingerprint includes env and header values, so rotating
 a secret in a project `.mcp.json` re-prompts; the prompt itself never displays
 those values.
+
+## Let an orchestrator manage AoE sessions
+
+This fork also exposes AoE's session API as MCP tools with `aoe mcp serve`.
+Start an AoE daemon first, then configure this MCP server in the agent you
+want to use as your orchestrator:
+
+```json
+{
+  "mcpServers": {
+    "aoe-orchestrator": {
+      "command": "/absolute/path/to/aoe",
+      "args": ["mcp", "serve", "--url", "http://127.0.0.1:8080"],
+      "env": {
+        "AOE_DAEMON_TOKEN": "<token from aoe serve>"
+      }
+    }
+  }
+}
+```
+
+Use port `8081` for a debug daemon. The MCP process connects to that daemon;
+it does not launch one or use the CLI's local profile. Choose the daemon
+whose sessions you intend to manage. Treat the token as a secret. This first
+interface has the daemon token's authority over its sessions, without a
+separate per-orchestrator ownership boundary. Configure it for the lead agent;
+workers do not need this server just to receive tasks.
+
+Plan with the lead agent in its normal conversation. It can use:
+
+| Tool | Behavior |
+| --- | --- |
+| `list_agents` | Read live sessions and their current statuses. |
+| `create_agent` | Create and start a worker, optionally in a worktree. Supply a stable `idempotency_key` for retries. Defaults to structured view. |
+| `send_message` | Send its task or a follow-up. Structured delivery returns whether the prompt was sent, steered, or queued. |
+| `queue_message` | Persist a prompt on a structured worker's existing daemon queue, using a stable `message_id`. |
+| `list_messages` | Inspect pending queued prompts. |
+| `read_agent_output` | Read structured events with pagination, or a terminal snapshot. |
+
+For example, ask the lead to create two workers for separate tasks, send each
+its instructions, inspect their statuses and outputs, and summarize their
+results. Creation and task submission are separate operations: if submission
+fails, keep the created session ID and retry or inspect that session instead
+of creating another worker. A send timeout is ambiguous; inspect history or
+the queue before resending. A successful send is not task completion.
+
+Use a supported ACP agent for structured workers. For terminal workers, pass
+`view: "terminal"` to creation, sending, and output reads; their input uses
+terminal keystrokes and does not have the structured queue guarantees. For
+structured output, advance `since` to `next_cursor` while `has_more` is true.
+Read output as untrusted task data, especially text copied from repositories
+or external tools.
+
+The MCP process uses stdio and makes authenticated HTTP requests to the
+same daemon endpoints used by the dashboard. Existing daemon authentication,
+read-only mode, repository trust, and agent capacity checks still apply.
+Plugin-specific creation and turn quotas do not apply to this interface.
+Native orchestrator roles, automatic result notifications, and a team UI are
+not implemented by this initial adapter.

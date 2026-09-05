@@ -190,7 +190,7 @@ pub enum Commands {
         command: TelemetryCommands,
     },
 
-    /// Inspect the effective MCP server set (provenance, conflicts, drift)
+    /// Inspect MCP configuration or serve agent orchestration tools
     Mcp {
         #[command(subcommand)]
         command: McpCommands,

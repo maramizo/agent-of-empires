@@ -62,6 +62,7 @@ mod filewatch_degradation;
 mod filewatch_tui_adapter_lifetime;
 mod filewatch_tui_drop_then_abort;
 mod log_filter_watcher_migration;
+mod mcp_stdio;
 mod no_stale_doc_refs;
 mod plugin_install;
 mod serve_cityhall_lockdown;

@@ -92,6 +92,7 @@ This document contains the help content for the `aoe` command-line program.
 * [`aoe telemetry disable`↴](#aoe-telemetry-disable)
 * [`aoe telemetry reset-id`↴](#aoe-telemetry-reset-id)
 * [`aoe mcp`↴](#aoe-mcp)
+* [`aoe mcp serve`↴](#aoe-mcp-serve)
 * [`aoe mcp list`↴](#aoe-mcp-list)
 * [`aoe skill`↴](#aoe-skill)
 * [`aoe skill list`↴](#aoe-skill-list)
@@ -156,7 +157,7 @@ Run without arguments to launch the TUI dashboard.
 * `settings` — Inspect resolved settings and their provenance
 * `cityhall` — Export and apply the CityHall config bundle (settings + projects)
 * `telemetry` — Manage anonymous opt-in usage telemetry
-* `mcp` — Inspect the effective MCP server set (provenance, conflicts, drift)
+* `mcp` — Inspect MCP configuration or serve agent orchestration tools
 * `skill` — Query and manage agent skills
 * `serve` — Start the aoe daemon: REST/WebSocket API, plus the web dashboard in builds that embed it
 * `url` — Print the URL of a running `aoe serve` daemon
@@ -1378,13 +1379,28 @@ Generate a fresh anonymous install id (only while opted in)
 
 ## `aoe mcp`
 
-Inspect the effective MCP server set (provenance, conflicts, drift)
+Inspect MCP configuration or serve agent orchestration tools
 
 **Usage:** `aoe mcp <COMMAND>`
 
 ###### **Subcommands:**
 
+* `serve` — Expose agent creation, messaging, queues, and output over MCP stdio
 * `list` — List the merged effective MCP server set with provenance, plus any conflicts and servers kept after removal from a native config
+
+
+
+## `aoe mcp serve`
+
+Expose agent creation, messaging, queues, and output over MCP stdio
+
+**Usage:** `aoe mcp serve [OPTIONS]`
+
+###### **Options:**
+
+* `--url <URL>` — Running AoE daemon URL. Pass its token through AOE_DAEMON_TOKEN
+
+  Default value: `http://127.0.0.1:8080`
 
 
 
