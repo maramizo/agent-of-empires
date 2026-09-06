@@ -5743,6 +5743,7 @@ trust_level = "trusted"
     #[test]
     #[serial_test::serial]
     fn test_build_container_config_respects_profile_hooks_disabled() {
+        let (_hg, _, _tmp_base) = BaseGuard::ready();
         let temp_home = TempDir::new().unwrap();
         std::env::set_var("HOME", temp_home.path());
         #[cfg(any(target_os = "linux", target_os = "macos"))]
@@ -5789,14 +5790,21 @@ trust_level = "trusted"
 
         let hook_dir =
             crate::hooks::hook_status_dir(instance_id).expect("test id must be allowlist-safe");
-        // Lexical is correct here: hooks are disabled, the instance dir is
-        // never created, so canonicalize would fail and no mount can match.
+        let hook_dir = hook_dir.canonicalize().unwrap();
         assert!(
-            !config
+            config
                 .volumes
                 .iter()
                 .any(|v| v.host_path == hook_dir.to_string_lossy()),
-            "status hook directory should not be mounted when profile disables hooks"
+            "thread identity hooks still require their instance directory"
+        );
+        let hooks = fs::read_to_string(codex_sandbox.join("hooks.json")).unwrap();
+        assert!(hooks.contains("session_id"));
+        assert!(
+            !hooks.contains("printf idle")
+                && !hooks.contains("printf running")
+                && !hooks.contains("printf waiting"),
+            "disabling status hooks must leave only identity capture"
         );
         crate::hooks::cleanup_hook_status_dir(instance_id);
     }
@@ -6042,12 +6050,13 @@ trusted_hash = "keep"
                 .join("hooks.json");
             let hooks: serde_json::Value =
                 serde_json::from_str(&fs::read_to_string(&hooks_path).unwrap()).unwrap();
-            let cmd = hooks["hooks"]["PreToolUse"][0]["hooks"][0]["command"]
-                .as_str()
-                .unwrap();
+            let handlers = hooks["hooks"]["PreToolUse"][0]["hooks"].as_array().unwrap();
             assert!(
-                cmd.contains(&format!("printf {expected_status}")),
-                "got command: {cmd}"
+                handlers.iter().any(|h| h["command"]
+                    .as_str()
+                    .unwrap()
+                    .contains(&format!("printf {expected_status}"))),
+                "profile status override must survive identity hook installation"
             );
             crate::hooks::cleanup_hook_status_dir(instance_id);
         }

@@ -653,42 +653,42 @@ const CODEX_HOOK_EVENTS: &[HookEvent] = &[
         name: "SessionStart",
         matcher: None,
         status: Some(HookStatus::Idle),
-        identity_field: None,
+        identity_field: Some(HookIdentityField::SessionId),
         waiting_tools: &[],
     },
     HookEvent {
         name: "UserPromptSubmit",
         matcher: None,
         status: Some(HookStatus::Running),
-        identity_field: None,
+        identity_field: Some(HookIdentityField::SessionId),
         waiting_tools: &[],
     },
     HookEvent {
         name: "PreToolUse",
         matcher: None,
         status: Some(HookStatus::Running),
-        identity_field: None,
+        identity_field: Some(HookIdentityField::SessionId),
         waiting_tools: &[],
     },
     HookEvent {
         name: "PermissionRequest",
         matcher: None,
         status: Some(HookStatus::Waiting),
-        identity_field: None,
+        identity_field: Some(HookIdentityField::SessionId),
         waiting_tools: &[],
     },
     HookEvent {
         name: "PostToolUse",
         matcher: None,
         status: Some(HookStatus::Running),
-        identity_field: None,
+        identity_field: Some(HookIdentityField::SessionId),
         waiting_tools: &[],
     },
     HookEvent {
         name: "Stop",
         matcher: None,
         status: Some(HookStatus::Idle),
-        identity_field: None,
+        identity_field: Some(HookIdentityField::SessionId),
         waiting_tools: &[],
     },
 ];
@@ -2859,7 +2859,7 @@ mod tests {
     fn pane_hook_capture_agents_declare_their_native_identity_field() {
         for agent in AGENTS {
             let expected = match agent.name {
-                "claude" => Some(HookIdentityField::SessionId),
+                "claude" | "codex" => Some(HookIdentityField::SessionId),
                 "cursor" => Some(HookIdentityField::ConversationIdOrSessionId),
                 _ => None,
             };

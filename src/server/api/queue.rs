@@ -1,4 +1,4 @@
-//! Server-owned prompt-queue HTTP handlers.
+//! Structured prompt queues and native Codex terminal enqueueing.
 //!
 //! The daemon persists and drains the queue, so follow-ups survive client
 //! reloads and closed PWAs. These handlers expose queue mutations to clients.
@@ -69,7 +69,7 @@ async fn session_exists(state: &AppState, id: &str) -> bool {
     state.instances.read().await.iter().any(|i| i.id == id)
 }
 
-/// `POST /api/sessions/{id}/queue`: append a prompt to the server queue.
+/// `POST /api/sessions/{id}/queue`: route to the session's queue backend.
 pub async fn queue_enqueue(
     State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
@@ -109,6 +109,15 @@ pub async fn queue_enqueue(
     // `buffer_and_enqueue` because the prompt endpoint's `Queued` disposition
     // reaches that helper already holding the guard, and it is not reentrant.
     let _submission = state.session_service.prompt_submission(&id).await;
+    if state
+        .instances
+        .read()
+        .await
+        .iter()
+        .any(|i| i.id == id && i.view != crate::session::View::Structured)
+    {
+        return native_enqueue(&state, &id, &req).await;
+    }
     // Depth cap. Re-enqueuing an existing id replaces that row rather than
     // adding one, so it must not count against a full queue.
     {
@@ -145,6 +154,107 @@ pub async fn queue_enqueue(
         Ok(entry) => (StatusCode::OK, Json(entry)).into_response(),
         Err((status, msg)) => (status, msg).into_response(),
     }
+}
+
+/// Native Codex owns terminal queues; never park these messages in the ACP queue.
+async fn native_enqueue(
+    state: &Arc<AppState>,
+    id: &str,
+    req: &EnqueueRequest,
+) -> axum::response::Response {
+    if let Some(resp) = super::cityhall_block(state) {
+        return resp;
+    }
+    let lock = state.instance_lock(id).await;
+    let _guard = lock.lock().await;
+    let Some(instance) = state
+        .instances
+        .read()
+        .await
+        .iter()
+        .find(|i| i.id == id)
+        .cloned()
+    else {
+        return super::session_not_found();
+    };
+    if instance.view == crate::session::View::Structured
+        || instance.is_sandboxed()
+        || instance.resolved_agent().map(|a| a.name) != Some("codex")
+        || instance.command.contains("--remote")
+    {
+        return (
+            StatusCode::CONFLICT,
+            "native queue requires a local, unsandboxed Codex terminal session",
+        )
+            .into_response();
+    }
+    if !req.attachments.is_empty() {
+        return (
+            StatusCode::BAD_REQUEST,
+            "native queue currently accepts text only",
+        )
+            .into_response();
+    }
+    let resolved = tokio::task::spawn_blocking(move || {
+        if !instance.tmux_session().ok()?.exists() {
+            return None;
+        }
+        // Only the pane's own hook record can identify the current thread.
+        // A cwd lookup or an older persisted resume id could target another turn.
+        let thread = crate::hooks::read_hook_session_id_any_age(&instance.id)?;
+        let thread = uuid::Uuid::parse_str(&thread).ok()?.to_string();
+        let environment = crate::session::environment::resolve_host_environment_pairs(
+            &instance.resolved_host_environment(),
+        );
+        Some((thread, instance.project_path, environment))
+    })
+    .await;
+    let Ok(Some((thread, cwd, environment))) = resolved else {
+        return (StatusCode::CONFLICT, "Codex thread identity is not available for this live pane; enable AoE Codex hooks and start the session before queueing").into_response();
+    };
+    match run_native_queue("codex", &thread, &req.text, &cwd, environment).await {
+        Ok(()) => Json(serde_json::json!({
+            "disposition": "queued", "backend": "codex", "thread_id": thread,
+            "message_id": req.id, "idempotent": false,
+            "message": "Accepted by Codex. message_id is correlation only; retries can duplicate delivery. Native pending queue listing is unavailable."
+        })).into_response(),
+        Err(message) => (StatusCode::BAD_GATEWAY, Json(serde_json::json!({"error": message}))).into_response(),
+    }
+}
+
+async fn run_native_queue(
+    executable: &str,
+    thread: &str,
+    text: &str,
+    cwd: &str,
+    environment: Vec<(String, String)>,
+) -> Result<(), String> {
+    let mut command = tokio::process::Command::new(executable);
+    command
+        .args(["queue", "--thread", thread])
+        .arg(format!("--message={text}"))
+        .current_dir(cwd)
+        .envs(environment)
+        .stdin(std::process::Stdio::null())
+        .kill_on_drop(true);
+    let output = tokio::time::timeout(std::time::Duration::from_secs(30), command.output())
+        .await
+        .map_err(|_| {
+            "Codex queue timed out; delivery is unknown. Inspect the worker before retrying."
+                .to_string()
+        })?
+        .map_err(|e| format!("Could not execute codex queue: {e}"))?;
+    if !output.status.success() {
+        return Err(format!(
+            "codex queue failed ({}): {}",
+            output.status,
+            String::from_utf8_lossy(&output.stderr)
+                .chars()
+                .take(2000)
+                .collect::<String>()
+        ));
+    }
+    Ok(())
 }
 
 /// Buffer already-validated attachment blobs under `prompt_id` and append the
@@ -244,6 +354,18 @@ pub async fn queue_list(
     State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
 ) -> impl IntoResponse {
+    let instances = state.instances.read().await;
+    let Some(instance) = instances.iter().find(|i| i.id == id) else {
+        return super::session_not_found();
+    };
+    if instance.view != crate::session::View::Structured {
+        return (
+            StatusCode::CONFLICT,
+            "Native terminal queue listing is unavailable; inspect read_agent_output instead",
+        )
+            .into_response();
+    }
+    drop(instances);
     Json(state.session_service.queued_prompts_snapshot(&id).await).into_response()
 }
 
@@ -324,6 +446,92 @@ mod tests {
     use super::*;
     use crate::session::Instance;
     use std::time::Duration;
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn native_queue_passes_literal_arguments_and_reports_cli_failure() {
+        use std::os::unix::fs::PermissionsExt;
+        let root = tempfile::tempdir().unwrap();
+        let executable = root.path().join("codex");
+        std::fs::write(&executable, "#!/bin/sh\nprintf '%s\\n' \"$@\" > args\nprintf '%s' \"$CODEX_HOME\" > home\nexit \"$QUEUE_TEST_EXIT\"\n").unwrap();
+        std::fs::set_permissions(&executable, std::fs::Permissions::from_mode(0o700)).unwrap();
+        let message = "literal $(touch unexpected) `echo nope` ' quote\nsecond line";
+        let environment = |code: &str| {
+            vec![
+                ("CODEX_HOME".into(), "/custom/codex".into()),
+                ("QUEUE_TEST_EXIT".into(), code.into()),
+            ]
+        };
+        run_native_queue(
+            executable.to_str().unwrap(),
+            "thread-id",
+            message,
+            root.path().to_str().unwrap(),
+            environment("0"),
+        )
+        .await
+        .unwrap();
+        assert_eq!(
+            std::fs::read_to_string(root.path().join("args")).unwrap(),
+            format!("queue\n--thread\nthread-id\n--message={message}\n")
+        );
+        assert_eq!(
+            std::fs::read_to_string(root.path().join("home")).unwrap(),
+            "/custom/codex"
+        );
+        assert!(!root.path().join("unexpected").exists());
+        assert!(run_native_queue(
+            executable.to_str().unwrap(),
+            "thread-id",
+            message,
+            root.path().to_str().unwrap(),
+            environment("7")
+        )
+        .await
+        .unwrap_err()
+        .contains("failed"));
+    }
+
+    #[tokio::test]
+    async fn terminal_queue_rejects_unsupported_agents_and_never_claims_an_empty_native_queue() {
+        let mut instance = Instance::new("native", "/tmp");
+        instance.tool = "claude".into();
+        let id = instance.id.clone();
+        let state = crate::server::test_support::build_test_app_state(vec![instance]);
+        let response = queue_enqueue(
+            State(state.clone()),
+            Path(id.clone()),
+            Ok(Json(EnqueueRequest {
+                id: "correlation".into(),
+                text: "task".into(),
+                created_at: None,
+                origin_device: None,
+                attachments: vec![],
+            })),
+        )
+        .await
+        .into_response();
+        assert_eq!(response.status(), StatusCode::CONFLICT);
+        assert!(state
+            .session_service
+            .queued_prompts_snapshot(&id)
+            .await
+            .is_empty());
+        assert_eq!(
+            queue_list(State(state.clone()), Path(id))
+                .await
+                .into_response()
+                .status(),
+            StatusCode::CONFLICT
+        );
+        assert_eq!(
+            queue_list(State(state), Path("missing".into()))
+                .await
+                .into_response()
+                .status(),
+            StatusCode::NOT_FOUND
+        );
+    }
 
     /// #3621: `POST /queue` rewrites an existing row's text and blobs when the
     /// client re-posts its id, so it must wait for an in-flight delivery the

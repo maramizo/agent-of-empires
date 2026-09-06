@@ -244,10 +244,10 @@ Plan with the lead agent in its normal conversation. It can use:
 | Tool | Behavior |
 | --- | --- |
 | `list_agents` | Read live sessions and their current statuses. |
-| `create_agent` | Create and start a worker, optionally in a worktree. Supply a stable `idempotency_key` for retries. Defaults to the normal terminal view. |
+| `create_agent` | Create a worker, optionally in a worktree. `send_message` launches its terminal if needed. Supply a stable `idempotency_key` for retries. Defaults to the normal terminal view. |
 | `send_message` | Send its task or a follow-up. Structured delivery returns whether the prompt was sent, steered, or queued. |
-| `queue_message` | Persist a prompt on a structured worker's existing daemon queue, using a stable `message_id`. |
-| `list_messages` | Inspect pending queued prompts. |
+| `queue_message` | Queue through native Codex for terminal workers, or the daemon queue for structured workers. Supply `message_id`; native retries are not deduplicated. |
+| `list_messages` | Inspect structured queued prompts; native Codex queue listing is unavailable. |
 | `read_agent_output` | Read structured events with pagination, or a terminal snapshot. |
 
 For example, ask the lead to create two workers for separate tasks, send each
@@ -267,9 +267,17 @@ or external tools.
 
 Codex CLI versions that expose `codex queue` can also queue messages for normal
 terminal sessions with `codex queue --thread <codex-thread-id> --message <text>`.
-That identifier belongs to Codex, not AoE. The current MCP `queue_message` and
-`list_messages` tools only expose AoE's structured queue; they do not yet route
-to the native Codex queue.
+The MCP `queue_message` tool accepts the AoE session ID and resolves the Codex
+thread from that pane's AoE hook record on the daemon host. It detects the
+session's actual mode automatically. Native queuing requires a running local,
+unsandboxed Codex terminal with AoE hooks enabled and a Codex version exposing
+`queue`. Send the first task with `send_message` to initialize the Codex thread
+before queueing follow-ups. Text is passed as a literal argument, without shell interpolation.
+
+For native Codex, `message_id` is a correlation ID, not a deduplication key.
+A timeout leaves delivery uncertain; inspect the worker before retrying.
+`list_messages` reports that native queue listing is unavailable; use
+`read_agent_output` to inspect progress. Structured queue behavior is unchanged.
 
 The MCP process uses stdio and makes authenticated HTTP requests to the
 same daemon endpoints used by the dashboard. Existing daemon authentication,

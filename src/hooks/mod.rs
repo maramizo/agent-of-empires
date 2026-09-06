@@ -1087,12 +1087,11 @@ fn merge_codex_hooks(
     let hooks = ensure_codex_hooks_table(config)?;
 
     for event in events {
-        let Some(status) = event.status else {
+        if event.status.is_none() && event.identity_field.is_none() {
             continue;
-        };
-
+        }
         let event_array = ensure_codex_event_array(hooks, &event.name)?;
-        event_array.push(codex_matcher_group(event, status, target));
+        event_array.push(codex_matcher_group(event, target));
     }
 
     Ok(())
@@ -1100,7 +1099,6 @@ fn merge_codex_hooks(
 
 fn codex_matcher_group(
     event: &crate::agents::ResolvedHookEvent,
-    status: crate::agents::HookStatus,
     target: HookInstallTarget,
 ) -> toml_edit::Table {
     let mut group = toml_edit::Table::new();
@@ -1108,15 +1106,24 @@ fn codex_matcher_group(
         group.insert("matcher", toml_edit::value(matcher.as_str()));
     }
 
-    let mut handler = toml_edit::Table::new();
-    handler.insert("type", toml_edit::value("command"));
-    handler.insert(
-        "command",
-        toml_edit::value(hook_command(status.as_str(), target)),
-    );
-
+    let mut commands = Vec::new();
+    if let Some(field) = event.identity_field {
+        commands.push(hook_command_session_id(target, field));
+    }
+    if let Some(status) = event.status {
+        commands.push(status_command_for_event(
+            status,
+            &event.waiting_tools,
+            target,
+        ));
+    }
     let mut handlers = toml_edit::ArrayOfTables::new();
-    handlers.push(handler);
+    for command in commands {
+        let mut handler = toml_edit::Table::new();
+        handler.insert("type", toml_edit::value("command"));
+        handler.insert("command", toml_edit::value(command));
+        handlers.push(handler);
+    }
     group.insert("hooks", toml_edit::Item::ArrayOfTables(handlers));
     group
 }
@@ -3093,7 +3100,10 @@ hooks = { PreToolUse = [{ matcher = "Bash", hooks = [{ type = "command", command
             config["hooks"]["state"]["user"]["trusted_hash"].as_str(),
             Some("keep")
         );
-        assert_eq!(config_text.matches("sh -c").count(), codex_events().len());
+        assert_eq!(
+            config_text.matches("sh -c").count(),
+            codex_events().len() * 2
+        );
     }
 
     #[test]
@@ -3130,7 +3140,10 @@ command = {:?}
             config["hooks"]["state"]["existing"]["trusted_hash"].as_str(),
             Some("hook-trust")
         );
-        assert_eq!(config_text.matches("sh -c").count(), codex_events().len());
+        assert_eq!(
+            config_text.matches("sh -c").count(),
+            codex_events().len() * 2
+        );
     }
 
     #[test]
@@ -3248,7 +3261,10 @@ trust_level = "trusted"
             config["projects"]["/tmp/aoe-project"]["trust_level"].as_str(),
             Some("trusted")
         );
-        assert_eq!(config_text.matches("sh -c").count(), codex_events().len());
+        assert_eq!(
+            config_text.matches("sh -c").count(),
+            codex_events().len() * 2
+        );
     }
 
     #[test]
@@ -3297,7 +3313,10 @@ trust_level = "trusted"
             config["projects"]["/tmp/aoe-project"]["trust_level"].as_str(),
             Some("trusted")
         );
-        assert_eq!(config_text.matches("sh -c").count(), codex_events().len());
+        assert_eq!(
+            config_text.matches("sh -c").count(),
+            codex_events().len() * 2
+        );
     }
 
     #[test]

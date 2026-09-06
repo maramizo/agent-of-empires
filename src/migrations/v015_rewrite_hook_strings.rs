@@ -781,12 +781,22 @@ mod tests {
         let parsed: Value =
             serde_json::from_str(&fs::read_to_string(codex_override.join("hooks.json")).unwrap())
                 .unwrap();
-        let cmd = parsed["hooks"]["SessionStart"][0]["hooks"][0]["command"]
-            .as_str()
-            .expect("AoE command must be present at the override path");
+        let handlers = parsed["hooks"]["SessionStart"][0]["hooks"]
+            .as_array()
+            .unwrap();
         assert!(
-            cmd.contains("case \"$AOE_INSTANCE_ID\""),
-            "profile-overridden Codex path must be reached and rewritten; got: {cmd}"
+            handlers.iter().any(|h| h["command"]
+                .as_str()
+                .unwrap()
+                .contains("case \"$AOE_INSTANCE_ID\"")),
+            "profile-overridden Codex status hook must be rewritten"
+        );
+        assert!(
+            handlers.iter().any(|h| h["command"]
+                .as_str()
+                .unwrap()
+                .contains("__extract-session-id")),
+            "Codex hook rewrite must also publish the thread identity"
         );
         assert!(
             !home.join(".codex/hooks.json").exists(),
