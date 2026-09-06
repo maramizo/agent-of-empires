@@ -1170,3 +1170,45 @@ mod paste_splitting {
         assert!(split_paste_for_live_send("").is_empty());
     }
 }
+
+#[test]
+#[serial]
+fn storage_refresh_shows_unmessaged_agent_without_interrupting_live_terminal() {
+    let mut env = create_test_env_with_sessions(1);
+    let active_id = install_live_for_first_session(&mut env);
+    env.view.selected_session = Some(active_id.clone());
+    env.view.preview_scroll_offset = 7;
+    let original_tmux = env.view.live_send.as_ref().unwrap().tmux_name.clone();
+    let original_chords = env.view.live_send.as_ref().unwrap().exit_chords.clone();
+    let worker = Instance::new("new worker", "/tmp/new-worker");
+    let worker_id = worker.id.clone();
+    assert!(worker.agent_session_id.is_none());
+    Storage::new_unwatched("test")
+        .unwrap()
+        .update(|instances, _| {
+            instances.push(worker);
+            Ok(())
+        })
+        .unwrap();
+
+    env.view.reload_storage_only().unwrap();
+
+    assert!(env
+        .view
+        .flat_items
+        .iter()
+        .any(|item| matches!(item, Item::Session { id, .. } if id == &worker_id)));
+    assert_eq!(
+        env.view.selected_session.as_deref(),
+        Some(active_id.as_str())
+    );
+    assert_eq!(env.view.preview_scroll_offset, 7);
+    let live = env
+        .view
+        .live_send
+        .as_ref()
+        .expect("terminal remains active");
+    assert_eq!(live.session_id, active_id);
+    assert_eq!(live.tmux_name, original_tmux);
+    assert_eq!(live.exit_chords, original_chords);
+}

@@ -1890,20 +1890,8 @@ impl App {
                 needs_full_refresh = true;
             }
 
-            // Disk reload: heartbeat (defense-in-depth) plus the
-            // file-watch-driven kick. Both gate on `live_send.is_none()`
-            // so reloads never interrupt a paste-in-progress; the dirty
-            // flag stays latched (Acquire pairs with the forwarder/adapter
-            // Release) until the next eligible tick. The watcher is scoped
-            // to `sessions.json` / `groups.json`, so the watcher path calls
-            // `reload_storage_only` (storage + profile rediscovery only);
-            // the heartbeat path calls full `reload()` to refresh the
-            // status-hook config cache and mouse-capture toggle.
-            //
-            // Config kick runs before the storage-mirror block:
-            // `refresh_from_config` invalidates profile-derived state that
-            // the block reads. Same `live_idle` gate; recomputing
-            // `tool_hotkey_cache` mid live-send disrupts input.
+            // Keep sidebar storage current while terminal input is active.
+            // Config reloads stay deferred because they can change input bindings.
             let live_idle = self.home.live_send.is_none();
             let config_kick = take_config_refresh_kick(live_idle, &self.home.config_watch.dirty);
             if config_kick {
@@ -1917,18 +1905,11 @@ impl App {
             }
 
             let heartbeat_due = last_disk_refresh.elapsed() >= DISK_REFRESH_INTERVAL;
-            // Only consume the dirty latch when we're eligible to act on
-            // it (`live_idle`). When live-send is on, the latch must
-            // persist for the next eligible tick so a watcher kick that
-            // arrived during live-send is not silently lost.
-            let dirty = if live_idle {
-                self.home
-                    .disk_watch
-                    .dirty
-                    .swap(false, std::sync::atomic::Ordering::Acquire)
-            } else {
-                false
-            };
+            let dirty = self
+                .home
+                .disk_watch
+                .dirty
+                .swap(false, std::sync::atomic::Ordering::Acquire);
             let refresh_decision = decide_disk_refresh(live_idle, heartbeat_due, dirty);
 
             match refresh_decision {
@@ -1950,7 +1931,10 @@ impl App {
                     refresh_needed = true;
                     needs_full_refresh = true;
                 }
-                DiskRefreshDecision::Watcher => {
+                DiskRefreshDecision::Storage => {
+                    if heartbeat_due {
+                        last_disk_refresh = std::time::Instant::now();
+                    }
                     let reload_result = self.home.reload_storage_only();
                     handle_tick_reload_storage(reload_result, &mut self.home.reload_failure_state);
                     refresh_needed = true;
@@ -2708,7 +2692,7 @@ fn poll_update_receiver(
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum DiskRefreshDecision {
     Heartbeat,
-    Watcher,
+    Storage,
     None,
 }
 
@@ -2722,13 +2706,10 @@ fn take_config_refresh_kick(live_idle: bool, config_dirty: &std::sync::atomic::A
 /// decision and mutation separate lets the unit tests below be
 /// table-driven without owning an atomic.
 fn decide_disk_refresh(live_idle: bool, heartbeat_due: bool, dirty: bool) -> DiskRefreshDecision {
-    if !live_idle {
-        return DiskRefreshDecision::None;
-    }
-    if heartbeat_due {
+    if live_idle && heartbeat_due {
         DiskRefreshDecision::Heartbeat
-    } else if dirty {
-        DiskRefreshDecision::Watcher
+    } else if heartbeat_due || dirty {
+        DiskRefreshDecision::Storage
     } else {
         DiskRefreshDecision::None
     }
@@ -4480,7 +4461,7 @@ mod tests {
         );
         assert_eq!(
             decide_disk_refresh(true, false, true),
-            DiskRefreshDecision::Watcher,
+            DiskRefreshDecision::Storage,
             "watcher kick alone fires the storage-only path"
         );
         assert_eq!(
@@ -4491,39 +4472,15 @@ mod tests {
     }
 
     #[test]
-    fn live_send_blocks_every_decision_branch() {
-        // The pure helper must return None for every (heartbeat_due,
-        // dirty) combination when live-send is on. Latch preservation is
-        // the caller's responsibility (see
-        // `caller_gating_preserves_dirty_latch_during_live_send`).
-        for &heartbeat in &[false, true] {
-            for &dirty in &[false, true] {
-                assert_eq!(
-                    decide_disk_refresh(false, heartbeat, dirty),
-                    DiskRefreshDecision::None,
-                    "live_send must block refresh (heartbeat={heartbeat}, dirty={dirty})"
-                );
-            }
+    fn live_send_refreshes_storage_without_reloading_config() {
+        for (heartbeat, dirty, expected) in [
+            (false, false, DiskRefreshDecision::None),
+            (false, true, DiskRefreshDecision::Storage),
+            (true, false, DiskRefreshDecision::Storage),
+            (true, true, DiskRefreshDecision::Storage),
+        ] {
+            assert_eq!(decide_disk_refresh(false, heartbeat, dirty), expected);
         }
-    }
-
-    #[test]
-    fn caller_gating_preserves_dirty_latch_during_live_send() {
-        // Mirrors the gating logic in the tick loop: only consume the
-        // latch when live_idle is true. A watcher kick that arrived
-        // during live-send must remain observable on the next eligible
-        // tick.
-        let dirty_atomic = std::sync::atomic::AtomicBool::new(true);
-        let live_idle = false;
-        let _dirty = if live_idle {
-            dirty_atomic.swap(false, std::sync::atomic::Ordering::Acquire)
-        } else {
-            false
-        };
-        assert!(
-            dirty_atomic.load(std::sync::atomic::Ordering::Acquire),
-            "live_send tick must NOT consume the dirty latch; it must persist for the next tick"
-        );
     }
 
     #[test]
