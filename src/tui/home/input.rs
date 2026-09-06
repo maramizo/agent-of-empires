@@ -4961,6 +4961,24 @@ impl HomeView {
                 }
             }
             ContextMenuAction::NewSession => self.open_new_session_dialog(),
+            ContextMenuAction::NewOrchestratorSession => {
+                if !self
+                    .available_tools
+                    .available_list()
+                    .iter()
+                    .any(|tool| tool == "codex")
+                {
+                    self.info_dialog = Some(InfoDialog::new(
+                        "Codex Required",
+                        "Install Codex and configure the aoe-orchestrator MCP server to create an orchestrator session.",
+                    ));
+                    return;
+                }
+                self.open_new_session_dialog();
+                if let Some(dialog) = &mut self.new_dialog {
+                    dialog.set_orchestrator();
+                }
+            }
             // The right-click already moved the cursor onto the row, so reuse
             // the "new from selection" path: a session row prefills its own repo
             // path and group, a group/project row borrows a member's path, the

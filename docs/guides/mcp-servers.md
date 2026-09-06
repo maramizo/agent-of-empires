@@ -214,6 +214,13 @@ those values.
 
 ## Let an orchestrator manage AoE sessions
 
+In the TUI, right-click the empty area of the sidebar and choose **New
+Orchestrator Session**, between **New Session** and **Change Sort**. Choose its
+directory and create it normally. This preset launches a Codex terminal with
+instructions to plan with you and coordinate agents, projects, and worktrees.
+It uses Codex's configured MCP servers; configure `aoe-orchestrator` as below
+before creating the session.
+
 This fork also exposes AoE's session API as MCP tools with `aoe mcp serve`.
 Start an AoE daemon first, then configure this MCP server in the agent you
 want to use as your orchestrator:

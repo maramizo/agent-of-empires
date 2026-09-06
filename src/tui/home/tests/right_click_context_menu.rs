@@ -466,10 +466,7 @@ fn empty_sidebar_click_is_gated_when_overlay_is_open() {
 #[test]
 #[serial]
 fn right_click_on_empty_sidebar_opens_empty_menu() {
-    // Right-clicking the empty area of the sidebar (below the last
-    // session) opens the dedicated 3-item menu so the mouse can
-    // reach New / Sort / Grouping the same way `n`/`o`/`g` would
-    // from the keyboard.
+    // Empty sidebar actions are separate from session-row actions.
     let mut env = create_test_env_with_sessions(2);
     setup_inner(&mut env);
     assert!(env.view.handle_right_click(5, 5));
@@ -481,7 +478,12 @@ fn right_click_on_empty_sidebar_opens_empty_menu() {
         .collect();
     assert_eq!(
         labels,
-        vec!["New Session", "Change Sort", "Change Grouping"]
+        vec![
+            "New Session",
+            "New Orchestrator Session",
+            "Change Sort",
+            "Change Grouping"
+        ]
     );
 }
 
@@ -516,6 +518,7 @@ fn empty_sidebar_menu_sort_dispatches() {
     let mut env = create_test_env_with_sessions(2);
     setup_inner(&mut env);
     env.view.handle_right_click(5, 5);
+    send_key(&mut env, crossterm::event::KeyCode::Down);
     send_key(&mut env, crossterm::event::KeyCode::Down); // highlight "Change Sort"
     send_key(&mut env, crossterm::event::KeyCode::Enter);
     assert!(env.view.context_menu.is_none());
@@ -528,6 +531,7 @@ fn empty_sidebar_menu_grouping_dispatches() {
     let mut env = create_test_env_with_sessions(2);
     setup_inner(&mut env);
     env.view.handle_right_click(5, 5);
+    send_key(&mut env, crossterm::event::KeyCode::Down);
     send_key(&mut env, crossterm::event::KeyCode::Down);
     send_key(&mut env, crossterm::event::KeyCode::Down); // highlight "Change Grouping"
     send_key(&mut env, crossterm::event::KeyCode::Enter);
@@ -587,4 +591,28 @@ fn session_menu_n_hotkey_opens_new_session() {
         env.view.new_dialog.is_some(),
         "n on session menu must open the new-session dialog"
     );
+}
+
+#[test]
+#[serial]
+fn empty_sidebar_menu_orchestrator_dispatches() {
+    let mut env = create_test_env_with_sessions(2);
+    env.view.available_tools = AvailableTools::with_tools(&["claude", "codex"]);
+    setup_inner(&mut env);
+    env.view.handle_right_click(5, 5);
+    send_key(&mut env, KeyCode::Down);
+    send_key(&mut env, KeyCode::Enter);
+    assert!(env.view.context_menu.is_none());
+    assert_eq!(
+        env.view.new_dialog.as_ref().unwrap().selected_tool(),
+        "codex"
+    );
+
+    env.view.new_dialog = None;
+    env.view.available_tools = AvailableTools::with_tools(&["claude"]);
+    env.view.handle_right_click(5, 5);
+    send_key(&mut env, KeyCode::Down);
+    send_key(&mut env, KeyCode::Enter);
+    assert!(env.view.new_dialog.is_none());
+    assert!(env.view.info_dialog.is_some());
 }

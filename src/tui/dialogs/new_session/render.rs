@@ -133,7 +133,11 @@ impl NewSessionDialog {
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
             .border_style(Style::default().fg(theme.accent))
-            .title(" New Session ")
+            .title(if self.orchestrator {
+                " New Orchestrator Session "
+            } else {
+                " New Session "
+            })
             .title_style(Style::default().fg(theme.title).bold());
 
         let inner = block.inner(dialog_area);

@@ -1909,3 +1909,24 @@ fn branch_picker_mouse_selection_routes_to_the_focused_field() {
         dialog.worktree_branch.value()
     );
 }
+
+#[test]
+fn orchestrator_preset_survives_path_reload_and_submits_terminal_prompt() {
+    let mut dialog =
+        NewSessionDialog::new_with_tools(vec!["claude", "codex"], TEST_PATH.to_string());
+    dialog.set_orchestrator();
+    dialog.set_path(TEST_PATH.to_string());
+    dialog.extra_args = Input::new("--model example-model".to_string());
+    let DialogResult::Submit(data) = dialog.build_submit_result() else {
+        panic!("expected session data");
+    };
+    assert_eq!(data.tool, "codex");
+    assert_eq!(data.title, "Codex Orchestrator");
+    assert!(!data.structured);
+    assert!(!data.sandbox);
+    let argv = shell_words::split(&data.extra_args).unwrap();
+    assert_eq!(&argv[..2], &["--model", "example-model"]);
+    assert_eq!(argv.len(), 3);
+    assert!(argv[2].contains("aoe-orchestrator MCP tools"));
+    assert!(argv[2].contains("Wait for the user's task"));
+}

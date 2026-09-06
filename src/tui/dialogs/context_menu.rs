@@ -25,6 +25,7 @@ pub enum ContextMenuAction {
     ToggleUnread,
     /// Open the new-session dialog (mirrors the `'n'` hotkey).
     NewSession,
+    NewOrchestratorSession,
     /// Open the new-session dialog prefilled from the right-clicked row
     /// (mirrors `'N'` "new from selection"): a session row inherits its
     /// repo path and group, a project/group row borrows a member's path,
@@ -236,6 +237,10 @@ impl ContextMenuDialog {
             anchor,
             vec![
                 (ContextMenuAction::NewSession, "New Session"),
+                (
+                    ContextMenuAction::NewOrchestratorSession,
+                    "New Orchestrator Session",
+                ),
                 (ContextMenuAction::OpenSortPicker, "Change Sort"),
                 (ContextMenuAction::OpenGroupPicker, "Change Grouping"),
             ],

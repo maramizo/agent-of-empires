@@ -287,6 +287,7 @@ pub struct NewSessionDialog {
     /// verbatim into the resulting `NewSessionData` on submit; `None` for an
     /// ordinary new session.
     pub(super) fork_seed: Option<crate::session::ForkSeed>,
+    pub(super) orchestrator: bool,
     /// Per-field hit rect captured by the renderer of the main form
     /// so a mouse click / hover can target the same cells the user
     /// sees. Each entry is `(focused_field_index, rect)`. Cleared and
@@ -571,6 +572,7 @@ impl NewSessionDialog {
             confirm_create_dir: None,
             scratch: false,
             fork_seed: None,
+            orchestrator: false,
             focusable_rects: Vec::new(),
             sandbox_config_rects: Vec::new(),
             tool_config_rects: Vec::new(),
@@ -594,6 +596,18 @@ impl NewSessionDialog {
     /// Pre-fill the title field (e.g. a "(fork)" suffix when forking).
     pub fn set_title(&mut self, title: String) {
         self.title = Input::new(title);
+    }
+
+    /// Use the normal Codex terminal with an orchestration startup prompt.
+    pub fn set_orchestrator(&mut self) {
+        self.set_tool("codex");
+        self.available_tools = vec!["codex".to_string()];
+        self.tool_index = 0;
+        self.orchestrator = true;
+        self.set_title("Codex Orchestrator".to_string());
+        self.structured_enabled = false;
+        self.structured_capable = false;
+        self.sandbox_enabled = false;
     }
 
     /// Seed this dialog as a fork (carried into the resulting NewSessionData).
@@ -807,6 +821,7 @@ impl NewSessionDialog {
         self.yolo_mode = self.yolo_mode_default;
         self.sandbox_enabled = self.docker_available
             && config.sandbox.enabled_by_default
+            && !self.orchestrator
             && !self.selected_tool_host_only();
         self.worktree_enabled = config.worktree.enabled && !self.selected_tool_host_only();
 
@@ -839,7 +854,8 @@ impl NewSessionDialog {
                 .unwrap_or_default(),
         );
         self.command_override = Input::new(config.session.resolve_tool_command(selected_tool));
-        self.structured_capable = compute_structured_capable(selected_tool, &config);
+        self.structured_capable =
+            !self.orchestrator && compute_structured_capable(selected_tool, &config);
         if !self.structured_capable {
             self.structured_enabled = false;
         }
@@ -928,6 +944,7 @@ impl NewSessionDialog {
             confirm_create_dir: None,
             scratch: false,
             fork_seed: None,
+            orchestrator: false,
             focusable_rects: Vec::new(),
             sandbox_config_rects: Vec::new(),
             tool_config_rects: Vec::new(),
@@ -1001,6 +1018,7 @@ impl NewSessionDialog {
             confirm_create_dir: None,
             scratch: false,
             fork_seed: None,
+            orchestrator: false,
             focusable_rects: Vec::new(),
             sandbox_config_rects: Vec::new(),
             tool_config_rects: Vec::new(),
@@ -2070,7 +2088,7 @@ impl NewSessionDialog {
                 .unwrap_or_default(),
         );
         self.command_override = Input::new(config.session.resolve_tool_command(tool));
-        self.structured_capable = compute_structured_capable(tool, &config);
+        self.structured_capable = !self.orchestrator && compute_structured_capable(tool, &config);
         if !self.structured_capable {
             self.structured_enabled = false;
         }
@@ -2197,7 +2215,18 @@ impl NewSessionDialog {
             } else {
                 Vec::new()
             },
-            extra_args: self.extra_args.value().trim().to_string(),
+            extra_args: if self.orchestrator {
+                let prompt = "You are the AoE orchestrator. Plan with the user and coordinate agents through the aoe-orchestrator MCP tools: list agents and inspect output, create agents, send or queue messages, manage projects, assign agents to projects, and add worktrees. Use normal terminal agents unless the user requests structured mode. Check existing agents before creating duplicates. If the MCP tools are unavailable, explain that the aoe-orchestrator MCP server must be configured before orchestration can work. Wait for the user's task before starting agents or changing projects.";
+                format!(
+                    "{} {}",
+                    self.extra_args.value().trim(),
+                    crate::session::environment::shell_escape(prompt)
+                )
+                .trim()
+                .to_string()
+            } else {
+                self.extra_args.value().trim().to_string()
+            },
             command_override: self.command_override.value().trim().to_string(),
             scratch: self.scratch,
             fork_seed: self.fork_seed.clone(),
