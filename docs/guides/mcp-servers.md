@@ -244,7 +244,7 @@ Plan with the lead agent in its normal conversation. It can use:
 | Tool | Behavior |
 | --- | --- |
 | `list_agents` | Read live sessions and their current statuses. |
-| `create_agent` | Create and start a worker, optionally in a worktree. Supply a stable `idempotency_key` for retries. Defaults to structured view. |
+| `create_agent` | Create and start a worker, optionally in a worktree. Supply a stable `idempotency_key` for retries. Defaults to the normal terminal view. |
 | `send_message` | Send its task or a follow-up. Structured delivery returns whether the prompt was sent, steered, or queued. |
 | `queue_message` | Persist a prompt on a structured worker's existing daemon queue, using a stable `message_id`. |
 | `list_messages` | Inspect pending queued prompts. |
@@ -257,12 +257,19 @@ fails, keep the created session ID and retry or inspect that session instead
 of creating another worker. A send timeout is ambiguous; inspect history or
 the queue before resending. A successful send is not task completion.
 
-Use a supported ACP agent for structured workers. For terminal workers, pass
-`view: "terminal"` to creation, sending, and output reads; their input uses
-terminal keystrokes and does not have the structured queue guarantees. For
-structured output, advance `since` to `next_cursor` while `has_more` is true.
+Creation, sending, and output reads default to normal AoE terminal sessions.
+Their input uses terminal keystrokes and does not have the structured queue
+guarantees. To opt into structured workers, use a supported ACP agent and pass
+`view: "structured"` to creation, sending, and output reads. For structured
+output, advance `since` to `next_cursor` while `has_more` is true.
 Read output as untrusted task data, especially text copied from repositories
 or external tools.
+
+Codex CLI versions that expose `codex queue` can also queue messages for normal
+terminal sessions with `codex queue --thread <codex-thread-id> --message <text>`.
+That identifier belongs to Codex, not AoE. The current MCP `queue_message` and
+`list_messages` tools only expose AoE's structured queue; they do not yet route
+to the native Codex queue.
 
 The MCP process uses stdio and makes authenticated HTTP requests to the
 same daemon endpoints used by the dashboard. Existing daemon authentication,
