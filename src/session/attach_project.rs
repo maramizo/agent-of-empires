@@ -430,6 +430,31 @@ pub fn plan(
     repo_path: &Path,
     on_existing: ExistingBranch,
 ) -> Result<AttachPlan> {
+    plan_with_options(
+        instance,
+        profile,
+        repo_path,
+        on_existing,
+        &WorktreeOptions::default(),
+    )
+}
+
+/// Explicit worktree identity permits distinct branches from the same repository.
+#[derive(Debug, Clone, Default, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WorktreeOptions {
+    pub name: Option<String>,
+    pub branch: Option<String>,
+    pub base_branch: Option<String>,
+}
+
+pub fn plan_with_options(
+    instance: &super::Instance,
+    profile: &str,
+    repo_path: &Path,
+    on_existing: ExistingBranch,
+    options: &WorktreeOptions,
+) -> Result<AttachPlan> {
     // A scratch session has no repo of its own: its cwd is `<app_dir>/scratch/
     // <id>/`, which deletion removes wholesale. Attaching would give it a repo
     // its own workflow has no place for, and the result reads as a multi-repo
@@ -488,8 +513,37 @@ pub fn plan(
 
     let main_repo_path = GitWorktree::find_main_repo(repo_path)?;
     let main_repo_path = canonical(&main_repo_path);
-    let repo_name = repo_leaf_name(&main_repo_path);
-    reject_duplicate(instance, &main_repo_path, &repo_name)?;
+    let repo_name = options
+        .name
+        .clone()
+        .unwrap_or_else(|| repo_leaf_name(&main_repo_path));
+    if options.name.is_some() || options.branch.is_some() {
+        if options.name.is_none() || options.branch.is_none() {
+            bail!("An explicit worktree requires both name and branch");
+        }
+        if repo_name.is_empty()
+            || repo_name == "."
+            || repo_name == ".."
+            || repo_name
+                .chars()
+                .any(|c| !c.is_ascii_alphanumeric() && !matches!(c, '-' | '_' | '.'))
+        {
+            bail!("Worktree name must be a directory leaf containing letters, digits, dots, hyphens, or underscores");
+        }
+        if instance
+            .all_repos()
+            .iter()
+            .any(|repo| repo.name.eq_ignore_ascii_case(&repo_name))
+        {
+            bail!("A worktree directory named '{repo_name}' already belongs to this agent");
+        }
+        let branch = options.branch.as_deref().unwrap();
+        if branch.is_empty() || builder::git_sanitize_branch_name(branch) != branch {
+            bail!("Invalid explicit worktree branch");
+        }
+    } else {
+        reject_duplicate(instance, &main_repo_path, &repo_name)?;
+    }
 
     // Resolved against the repo being attached: it is the repo a worktree gets
     // created in, so its own `.agent-of-empires/config.toml` governs submodule
@@ -500,7 +554,7 @@ pub fn plan(
         .with_init_submodules(config.worktree.init_submodules);
 
     let base = builder::resolve_base_branch(
-        None,
+        options.base_branch.as_deref(),
         builder::project_base_branches(profile)
             .get(&super::projects::canonical_key(
                 &main_repo_path.to_string_lossy(),
@@ -509,7 +563,10 @@ pub fn plan(
         config.worktree.default_base_branch.as_deref(),
     );
     // The session's own branch when it has one, else one derived from its title.
-    let suggested = session_branch(instance)
+    let suggested = options
+        .branch
+        .as_deref()
+        .or_else(|| session_branch(instance))
         .map(str::to_string)
         .unwrap_or_else(|| branch_for_plain_session(&instance.title));
     let plan = plan_branch(&git_wt, &suggested, base, on_existing)?;
@@ -519,6 +576,18 @@ pub fn plan(
     // checkout, workspace path taken, branch already checked out) happens with
     // nothing created.
     let conversion = plan_conversion(instance, profile, on_existing)?;
+    if let Conversion::MoveIn { primary, .. } | Conversion::WorktreePrimary { primary, .. } =
+        &conversion
+    {
+        if primary.name.eq_ignore_ascii_case(&repo_name) {
+            bail!("Worktree name collides with the primary repository directory");
+        }
+        if canonical(Path::new(&primary.main_repo_path)) == main_repo_path
+            && primary.branch == plan.branch
+        {
+            bail!("The primary worktree already uses this branch");
+        }
+    }
 
     let workspace_dir = conversion.workspace_dir().to_path_buf();
     let worktree_path = workspace_dir.join(&repo_name);
@@ -538,6 +607,7 @@ pub fn plan(
         added_name: repo_name,
         added_main_repo: main_repo_path,
         added_branch: plan,
+        added_base_override: options.base_branch.clone(),
         added_worktree: worktree_path,
         init_submodules: config.worktree.init_submodules,
     })
@@ -563,6 +633,7 @@ pub struct AttachPlan {
     added_name: String,
     added_main_repo: PathBuf,
     added_branch: BranchPlan,
+    added_base_override: Option<String>,
     added_worktree: PathBuf,
     init_submodules: bool,
 }
@@ -585,6 +656,7 @@ pub fn execute(instance: &super::Instance, plan: AttachPlan) -> Result<PreparedA
         added_name: repo_name,
         added_main_repo: main_repo_path,
         added_branch: plan,
+        added_base_override,
         added_worktree: worktree_path,
         init_submodules,
         ..
@@ -690,7 +762,7 @@ pub fn execute(instance: &super::Instance, plan: AttachPlan) -> Result<PreparedA
         // Recorded only when aoe forked the branch from this base; an
         // attach-existing-branch repo has no base of its own.
         base_branch: plan.create.then(|| plan.base.clone()).flatten(),
-        base_branch_override: None,
+        base_branch_override: added_base_override,
     };
 
     // The repo list the session ends up with: whatever it already had, then the
@@ -1428,6 +1500,67 @@ mod tests {
                 .collect::<Vec<_>>(),
             vec!["backend", "frontend"]
         );
+
+        let options = WorktreeOptions {
+            name: Some("backend-review".into()),
+            branch: Some("review".into()),
+            base_branch: Some("featx".into()),
+        };
+        let extra_plan = plan_with_options(
+            &inst,
+            "attach-append",
+            &backend,
+            ExistingBranch::Refuse,
+            &options,
+        )
+        .unwrap();
+        let extra = execute(&inst, extra_plan).unwrap();
+        assert_eq!(extra.outcome.repo.branch, "review");
+        assert_eq!(
+            extra.outcome.repo.base_branch_override.as_deref(),
+            Some("featx")
+        );
+        assert!(workspace.join("backend-review/.git").exists());
+        assert!(backend_wt.join(".git").exists());
+        let mut extended = inst.clone();
+        extended.workspace_info = Some(extra.workspace_info.clone());
+        assert!(plan_with_options(
+            &extended,
+            "attach-append",
+            &backend,
+            ExistingBranch::Refuse,
+            &options
+        )
+        .is_err());
+        for name in ["../outside", "BACKEND", ".", "bad/name"] {
+            let invalid = WorktreeOptions {
+                name: Some(name.into()),
+                ..options.clone()
+            };
+            assert!(plan_with_options(
+                &inst,
+                "attach-append",
+                &backend,
+                ExistingBranch::Refuse,
+                &invalid
+            )
+            .is_err());
+        }
+        let same_branch = WorktreeOptions {
+            branch: Some("featx".into()),
+            ..options.clone()
+        };
+        assert!(plan_with_options(
+            &inst,
+            "attach-append",
+            &backend,
+            ExistingBranch::Attach,
+            &same_branch
+        )
+        .is_err());
+        extra.rollback();
+        assert!(!workspace.join("backend-review").exists());
+        assert!(backend_wt.join(".git").exists());
     }
 
     /// The in-place shape moves the session's working directory into a new

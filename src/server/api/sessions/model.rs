@@ -286,6 +286,9 @@ pub struct WorkspaceRepoSummary {
     pub name: String,
     pub source_path: String,
     pub branch: String,
+    pub worktree_path: String,
+    pub main_repo_path: String,
+    pub managed_by_aoe: bool,
 }
 
 #[derive(Serialize, Clone)]
@@ -483,6 +486,9 @@ impl SessionResponse {
                     name: r.name.clone(),
                     source_path: r.source_path.clone(),
                     branch: r.branch.clone(),
+                    worktree_path: r.worktree_path.clone(),
+                    main_repo_path: r.main_repo_path.clone(),
+                    managed_by_aoe: r.managed_by_aoe,
                 })
                 .collect(),
             warnings: Vec::new(),

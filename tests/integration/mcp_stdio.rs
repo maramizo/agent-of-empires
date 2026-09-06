@@ -63,6 +63,9 @@ fn mcp_stdio_keeps_stdout_and_local_state_clean() {
         .map(|tool| tool["name"].as_str().unwrap())
         .collect();
     assert!(names.contains(&"create_agent"));
+    assert!(names.contains(&"create_project"));
+    assert!(names.contains(&"assign_agent_project"));
+    assert!(names.contains(&"add_agent_worktree"));
     assert!(names.contains(&"queue_message"));
     assert!(names.contains(&"read_agent_output"));
     assert_eq!(replies[2]["result"], json!({}));

@@ -89,6 +89,23 @@ pub(crate) async fn attach_project(
     repo_path: &Path,
     on_existing: ExistingBranch,
 ) -> Result<(AttachOutcome, WorkerOutcome), AttachError> {
+    attach_project_with_options(
+        state,
+        id,
+        repo_path,
+        on_existing,
+        crate::session::attach_project::WorktreeOptions::default(),
+    )
+    .await
+}
+
+pub(crate) async fn attach_project_with_options(
+    state: &Arc<AppState>,
+    id: &str,
+    repo_path: &Path,
+    on_existing: ExistingBranch,
+    options: crate::session::attach_project::WorktreeOptions,
+) -> Result<(AttachOutcome, WorkerOutcome), AttachError> {
     // `instance_lock` alone stopped being the whole barrier once prompt
     // submission moved to its own authority (#3621): the queue drains and every
     // prompt endpoint serialize on `prompt_submission` and never take
@@ -150,9 +167,14 @@ pub(crate) async fn attach_project(
                 .into_iter()
                 .find(|i| i.id == id_owned)
                 .ok_or_else(|| format!("session not found: {id_owned}"))?;
-            let plan =
-                crate::session::attach_project::plan(&instance, &profile, &repo, on_existing)
-                    .map_err(|e| format!("{e:#}"))?;
+            let plan = crate::session::attach_project::plan_with_options(
+                &instance,
+                &profile,
+                &repo,
+                on_existing,
+                &options,
+            )
+            .map_err(|e| format!("{e:#}"))?;
             let restarts =
                 crate::session::attach_project::needs_restart(&plan, instance.is_sandboxed());
             Ok::<_, String>((instance, plan, restarts))

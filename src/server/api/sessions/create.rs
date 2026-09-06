@@ -14,7 +14,12 @@ pub struct RepoBaseInput {
 #[derive(Deserialize)]
 pub struct CreateSessionBody {
     pub title: Option<String>,
+    #[serde(default)]
     pub path: String,
+    /// Registered project names or absolute paths, first entry being primary.
+    /// Mutually exclusive with path and extra_repo_paths.
+    #[serde(default)]
+    pub projects: Option<Vec<String>>,
     pub tool: String,
     #[serde(default)]
     pub group: String,
@@ -628,6 +633,34 @@ pub async fn create_session(
         Ok(b) => b,
         Err(rej) => return rej.into_response(),
     };
+
+    if !state.cityhall_mode {
+        if let Some(projects) = body.projects.take() {
+            if projects.is_empty()
+                || projects.len() > 64
+                || !body.path.is_empty()
+                || !body.extra_repo_paths.is_empty()
+            {
+                return (StatusCode::BAD_REQUEST, Json(serde_json::json!({"error":"invalid_projects", "message":"Provide 1 to 64 projects, without path or extra_repo_paths"}))).into_response();
+            }
+            let profile = body.profile.as_deref().unwrap_or(&state.profile);
+            let mut paths = Vec::new();
+            for project in projects {
+                match super::rename::resolve_project_input(profile, project.trim()).await {
+                    Ok(path) => paths.push(path.to_string_lossy().into_owned()),
+                    Err(message) => {
+                        return (
+                            StatusCode::BAD_REQUEST,
+                            Json(serde_json::json!({"error":"invalid_project", "message":message})),
+                        )
+                            .into_response()
+                    }
+                }
+            }
+            body.path = paths.remove(0);
+            body.extra_repo_paths = paths;
+        }
+    }
 
     if state.cityhall_mode {
         // CityHall sessions are server-derived and locked down: they span every

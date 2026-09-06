@@ -29,13 +29,24 @@ fn schema(properties: Value, required: &[&str]) -> Value {
 fn tools() -> Value {
     let string = json!({"type":"string", "minLength":1});
     let view = json!({"type":"string", "enum":["structured", "terminal"], "default":"terminal"});
+    let scope = json!({"type":"string", "enum":["global","profile"]});
+    let strings = json!({"type":"array", "items":string, "minItems":1, "maxItems":64});
     let definitions = [
+        ("list_projects", "List registered AoE project directories, names, scopes, pins, and default base branches.", schema(json!({"scope":scope}), &[])),
+        ("create_project", "Register an existing directory as an AoE project. This does not create a repository or directory. Scope defaults to global.", schema(json!({"path":string,"name":string,"scope":scope,"allow_override":{"type":"boolean"},"default_base_branch":string,"pinned":{"type":"boolean"}}), &["path"])),
+        ("update_project", "Update a registered project's pin or default base branch. Use null to clear the base branch. Scope defaults to global.", schema(json!({"name":string,"scope":scope,"default_base_branch":{"type":["string","null"]},"pinned":{"type":"boolean"}}), &["name"])),
+        ("delete_project", "Unregister a project by name and scope. Does not delete its directory, worktrees, or agents. Scope defaults to global.", schema(json!({"name":string,"scope":scope}), &["name"])),
+        ("assign_agent_project", "Attach a registered project name or absolute repository path to an existing agent workspace. May move its cwd and restart an idle worker; refuses active turns. Inspect worker and warnings in the result. Repeating an already-attached project is rejected.", schema(json!({"session_id":string,"project":string,"attach_existing_branch":{"type":"boolean"}}), &["session_id","project"])),
+        ("add_agent_worktree", "Add a named worktree to an agent, including another branch of a repository it already uses. Requires an idle agent on a Git repository. Keeps existing worktrees and records the new one for AoE cleanup. May move cwd/restart; inspect worker and warnings.", schema(json!({"session_id":string,"project":string,"name":string,"branch":string,"base_branch":string,"attach_existing_branch":{"type":"boolean"}}), &["session_id","project","name","branch"])),
         ("list_agents", "List sessions and their current statuses. Includes all sessions visible to the daemon token.", schema(json!({}), &[])),
         ("create_agent", "Create a normal AoE terminal agent by default; send_message launches its terminal if needed. Structured view requires an explicit request and a supported ACP adapter. Creation does not confirm readiness; inspect status and output. Use a stable idempotency_key when retrying creation. Send its task separately with send_message.", schema(json!({
             "path":string, "tool":string, "title":string, "idempotency_key":string,
             "view":view, "worktree_enabled":{"type":"boolean"},
-            "create_new_branch":{"type":"boolean"}, "worktree_branch":string
-        }), &["path", "tool", "title", "idempotency_key"])),
+            "create_new_branch":{"type":"boolean"}, "worktree_branch":string,
+            "base_branch":string, "extra_repo_paths":strings,
+            "projects":strings,
+            "repo_bases":{"type":"array","maxItems":64,"items":schema(json!({"repo":string,"base_branch":string}), &["repo","base_branch"])}
+        }), &["tool", "title", "idempotency_key"])),
         ("send_message", "Send a prompt; defaults to normal terminal input. Structured sessions may send, steer, or queue it; inspect disposition. Terminal delivery is keystrokes, not a durable queue. Do not blindly retry a timeout: delivery may have succeeded.", schema(json!({"session_id":string,"message":string,"view":view}), &["session_id","message"])),
         ("queue_message", "Queue a message using the session's actual mode: native codex queue for local terminal Codex, or the daemon queue for structured agents. Native message_id is correlation only, NOT deduplication: do not blindly retry. Send the first task with send_message to initialize the Codex thread before queueing follow-ups. Native pending queue listing is unavailable.", schema(json!({"session_id":string,"message":string,"message_id":string}), &["session_id","message","message_id"])),
         ("list_messages", "Read a structured agent's pending message queue.", schema(json!({"session_id":string}), &["session_id"])),
@@ -45,7 +56,7 @@ fn tools() -> Value {
     ];
     Value::Array(definitions.into_iter().map(|(name, description, input)| json!({
         "name":name,"description":description,"inputSchema":input,
-        "annotations":{"readOnlyHint":matches!(name,"list_agents"|"list_messages"|"read_agent_output")}
+        "annotations":{"readOnlyHint":matches!(name,"list_agents"|"list_projects"|"list_messages"|"read_agent_output")}
     })).collect())
 }
 
@@ -58,33 +69,78 @@ fn validate(name: &str, args: &Value) -> Result<()> {
         .find(|tool| tool["name"] == name)
         .context("Unknown tool")?;
     let schema = &definition["inputSchema"];
-    let args = args.as_object().context("arguments must be an object")?;
-    for required in schema["required"].as_array().unwrap() {
-        let key = required.as_str().unwrap();
-        if !args.contains_key(key) {
-            bail!("Missing argument: {key}");
+    validate_value(schema, args, "arguments")?;
+    if name == "create_agent" {
+        if args.get("path").is_some() == args.get("projects").is_some() {
+            bail!("Provide either path or projects (registered names or absolute paths)");
+        }
+        if args.get("projects").is_some() && args.get("extra_repo_paths").is_some() {
+            bail!("Use projects alone, or path with extra_repo_paths");
         }
     }
-    for (key, value) in args {
-        let rule = schema["properties"]
-            .get(key)
-            .context(format!("Unknown argument: {key}"))?;
-        let valid = match rule["type"].as_str() {
-            Some("string") => value.as_str().is_some_and(|s| !s.trim().is_empty()),
-            Some("boolean") => value.is_boolean(),
-            Some("integer") => value.as_u64().is_some_and(|n| {
-                n >= rule["minimum"].as_u64().unwrap_or(0)
-                    && n <= rule["maximum"].as_u64().unwrap_or(u64::MAX)
-            }),
-            _ => false,
-        };
-        if !valid
-            || rule["enum"]
-                .as_array()
-                .is_some_and(|choices| !choices.contains(value))
-        {
-            bail!("Invalid argument: {key}");
+    if name == "update_project"
+        && args.get("pinned").is_none()
+        && args.get("default_base_branch").is_none()
+    {
+        bail!("Provide pinned or default_base_branch");
+    }
+    Ok(())
+}
+
+fn validate_value(rule: &Value, value: &Value, path: &str) -> Result<()> {
+    if rule["type"].is_array() {
+        if value.is_null() || value.is_string() {
+            return Ok(());
         }
+        bail!("Invalid argument: {path}");
+    }
+    let valid = match rule["type"].as_str() {
+        Some("object") => {
+            let object = value
+                .as_object()
+                .context(format!("{path} must be an object"))?;
+            for required in rule["required"].as_array().unwrap() {
+                let key = required.as_str().unwrap();
+                if !object.contains_key(key) {
+                    bail!("Missing argument: {path}.{key}");
+                }
+            }
+            for (key, value) in object {
+                let nested = rule["properties"]
+                    .get(key)
+                    .context(format!("Unknown argument: {path}.{key}"))?;
+                validate_value(nested, value, &format!("{path}.{key}"))?;
+            }
+            true
+        }
+        Some("array") => {
+            let array = value
+                .as_array()
+                .context(format!("{path} must be an array"))?;
+            if array.len() < rule["minItems"].as_u64().unwrap_or(0) as usize
+                || array.len() > rule["maxItems"].as_u64().unwrap_or(64) as usize
+            {
+                bail!("Invalid array length: {path}");
+            }
+            for (index, item) in array.iter().enumerate() {
+                validate_value(&rule["items"], item, &format!("{path}[{index}]"))?;
+            }
+            true
+        }
+        Some("string") => value.as_str().is_some_and(|s| !s.trim().is_empty()),
+        Some("boolean") => value.is_boolean(),
+        Some("integer") => value.as_u64().is_some_and(|n| {
+            n >= rule["minimum"].as_u64().unwrap_or(0)
+                && n <= rule["maximum"].as_u64().unwrap_or(u64::MAX)
+        }),
+        _ => false,
+    };
+    if !valid
+        || rule["enum"]
+            .as_array()
+            .is_some_and(|choices| !choices.contains(value))
+    {
+        bail!("Invalid argument: {path}");
     }
     Ok(())
 }
@@ -119,11 +175,51 @@ impl Server {
         let mut body = None;
         let mut method = Method::GET;
         let terminal = args["view"] != "structured";
-        if name == "list_agents" || name == "create_agent" {
+        if matches!(
+            name,
+            "list_projects" | "create_project" | "update_project" | "delete_project"
+        ) {
+            url.set_path("/api/projects");
+            if let Some(scope) = args["scope"].as_str() {
+                url.query_pairs_mut().append_pair("scope", scope);
+            }
+            if matches!(name, "update_project" | "delete_project") {
+                let name = args["name"].as_str().unwrap();
+                if matches!(name, "." | "..") {
+                    bail!("Invalid project name");
+                }
+                url.path_segments_mut().unwrap().push(name);
+            }
+            if name == "create_project" {
+                method = Method::POST;
+                body = Some(args);
+            } else if name == "update_project" {
+                method = Method::PATCH;
+                let mut input = args;
+                input.as_object_mut().unwrap().remove("name");
+                input.as_object_mut().unwrap().remove("scope");
+                body = Some(input);
+            } else if name == "delete_project" {
+                method = Method::DELETE;
+            }
+        } else if name == "list_agents" || name == "create_agent" {
             url.set_path("/api/sessions");
             if name == "create_agent" {
                 method = Method::POST;
                 let mut input = args;
+                let multiple = input["projects"].as_array().is_some_and(|p| p.len() > 1)
+                    || input["extra_repo_paths"]
+                        .as_array()
+                        .is_some_and(|p| !p.is_empty());
+                if multiple {
+                    if input["worktree_enabled"] == false {
+                        bail!("Multiple projects require worktree_enabled=true");
+                    }
+                    input["worktree_enabled"] = json!(true);
+                    if input.get("create_new_branch").is_none() {
+                        input["create_new_branch"] = json!(true);
+                    }
+                }
                 if input.get("view").is_none() {
                     input["view"] = json!("terminal");
                 }
@@ -140,12 +236,29 @@ impl Server {
                 "send_message" if terminal => "send",
                 "send_message" => "acp/prompt",
                 "queue_message" | "list_messages" => "queue",
+                "assign_agent_project" | "add_agent_worktree" => "projects",
                 "read_agent_output" if terminal => "output",
                 "read_agent_output" => "acp/replay",
                 _ => unreachable!(),
             };
             url.set_path(&format!("/api/sessions/{id}/{suffix}"));
             match name {
+                "add_agent_worktree" => {
+                    method = Method::POST;
+                    let mut worktree = json!({"name":args["name"],"branch":args["branch"]});
+                    if let Some(base) = args.get("base_branch") {
+                        worktree["base_branch"] = base.clone();
+                    }
+                    body = Some(
+                        json!({"project":args["project"],"attach_existing_branch":args["attach_existing_branch"].as_bool().unwrap_or(false),"worktree":worktree}),
+                    );
+                }
+                "assign_agent_project" => {
+                    method = Method::POST;
+                    let mut input = args;
+                    input.as_object_mut().unwrap().remove("session_id");
+                    body = Some(input);
+                }
                 "send_message" => {
                     method = Method::POST;
                     body = Some(if terminal {
@@ -328,6 +441,55 @@ mod tests {
         let task = tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
         let cases = [
             (
+                "list_projects",
+                json!({"scope":"profile"}),
+                Method::GET,
+                "/api/projects?scope=profile",
+                Value::Null,
+            ),
+            (
+                "create_project",
+                json!({"path":"/repo","name":"Backend"}),
+                Method::POST,
+                "/api/projects",
+                json!({"path":"/repo","name":"Backend"}),
+            ),
+            (
+                "update_project",
+                json!({"name":"Backend API","scope":"profile","pinned":true,"default_base_branch":null}),
+                Method::PATCH,
+                "/api/projects/Backend%20API?scope=profile",
+                json!({"pinned":true,"default_base_branch":null}),
+            ),
+            (
+                "delete_project",
+                json!({"name":"Backend","scope":"global"}),
+                Method::DELETE,
+                "/api/projects/Backend?scope=global",
+                Value::Null,
+            ),
+            (
+                "assign_agent_project",
+                json!({"session_id":"child","project":"Frontend","attach_existing_branch":true}),
+                Method::POST,
+                "/api/sessions/child/projects",
+                json!({"project":"Frontend","attach_existing_branch":true}),
+            ),
+            (
+                "add_agent_worktree",
+                json!({"session_id":"child","project":"Backend","name":"backend-review","branch":"review","base_branch":"main"}),
+                Method::POST,
+                "/api/sessions/child/projects",
+                json!({"project":"Backend","attach_existing_branch":false,"worktree":{"name":"backend-review","branch":"review","base_branch":"main"}}),
+            ),
+            (
+                "create_agent",
+                json!({"projects":["Backend","Frontend"],"tool":"codex","title":"Both","idempotency_key":"both","repo_bases":[{"repo":"Backend","base_branch":"develop"}]}),
+                Method::POST,
+                "/api/sessions",
+                json!({"projects":["Backend","Frontend"],"tool":"codex","title":"Both","idempotency_key":"both","repo_bases":[{"repo":"Backend","base_branch":"develop"}],"worktree_enabled":true,"create_new_branch":true,"view":"terminal"}),
+            ),
+            (
                 "list_agents",
                 json!({}),
                 Method::GET,
@@ -411,6 +573,32 @@ mod tests {
         assert_eq!(init["id"], "init");
         assert_eq!(init["result"]["protocolVersion"], PROTOCOL);
         for (name, args) in [
+            (
+                "create_agent",
+                json!({"tool":"codex","title":"x","idempotency_key":"x"}),
+            ),
+            (
+                "create_agent",
+                json!({"projects":[42],"tool":"codex","title":"x","idempotency_key":"x"}),
+            ),
+            (
+                "create_agent",
+                json!({"projects":[],"tool":"codex","title":"x","idempotency_key":"x"}),
+            ),
+            (
+                "create_agent",
+                json!({"path":"/x","projects":["x"],"tool":"codex","title":"x","idempotency_key":"x"}),
+            ),
+            (
+                "create_agent",
+                json!({"path":"/x","repo_bases":[{"repo":"x","oops":"main"}],"tool":"codex","title":"x","idempotency_key":"x"}),
+            ),
+            ("update_project", json!({"name":"x"})),
+            (
+                "update_project",
+                json!({"name":"x","default_base_branch":false}),
+            ),
+            ("list_projects", json!({"scope":"other"})),
             ("unknown", json!({})),
             ("send_message", json!({"session_id":"x"})),
             ("send_message", json!({"session_id":"x","message":" "})),

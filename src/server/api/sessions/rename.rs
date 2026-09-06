@@ -987,6 +987,8 @@ pub struct AttachProjectBody {
     /// session leaves it alone.
     #[serde(default)]
     pub attach_existing_branch: bool,
+    #[serde(default)]
+    pub worktree: Option<crate::session::attach_project::WorktreeOptions>,
 }
 
 /// `POST /api/sessions/:id/projects`. Attaches a repo to a session that already
@@ -1055,8 +1057,23 @@ pub async fn attach_session_project(
         crate::session::attach_project::ExistingBranch::Refuse
     };
 
-    match crate::server::attach_project::attach_project(&state, &id, &repo_path, on_existing).await
-    {
+    let attached = match body.worktree {
+        Some(options) => {
+            crate::server::attach_project::attach_project_with_options(
+                &state,
+                &id,
+                &repo_path,
+                on_existing,
+                options,
+            )
+            .await
+        }
+        None => {
+            crate::server::attach_project::attach_project(&state, &id, &repo_path, on_existing)
+                .await
+        }
+    };
+    match attached {
         Ok((outcome, worker)) => {
             use crate::server::attach_project::WorkerOutcome;
             let (worker_status, worker_message) = match &worker {
@@ -1115,7 +1132,10 @@ pub async fn attach_session_project(
 ///
 /// An absolute path is taken as-is. Anything else is looked up in the project
 /// registry, so the web picker can send the name it already displays.
-async fn resolve_project_input(profile: &str, raw: &str) -> Result<std::path::PathBuf, String> {
+pub(super) async fn resolve_project_input(
+    profile: &str,
+    raw: &str,
+) -> Result<std::path::PathBuf, String> {
     // `Path` in this module is axum's extractor, so the std types are qualified.
     if std::path::Path::new(raw).is_absolute() {
         return Ok(std::path::PathBuf::from(raw));

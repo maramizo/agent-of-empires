@@ -243,6 +243,12 @@ Plan with the lead agent in its normal conversation. It can use:
 
 | Tool | Behavior |
 | --- | --- |
+| `list_projects` | List registered projects, scopes, pins, and default base branches. |
+| `create_project` | Register an existing directory globally or for the daemon profile. |
+| `update_project` | Change its pin or default base branch; `null` clears the branch. |
+| `delete_project` | Unregister a project without deleting its files or agents. |
+| `assign_agent_project` | Attach a project to an existing agent workspace. |
+| `add_agent_worktree` | Add a named worktree, including another branch of a repository already in the workspace. |
 | `list_agents` | Read live sessions and their current statuses. |
 | `create_agent` | Create a worker, optionally in a worktree. `send_message` launches its terminal if needed. Supply a stable `idempotency_key` for retries. Defaults to the normal terminal view. |
 | `send_message` | Send its task or a follow-up. Structured delivery returns whether the prompt was sent, steered, or queued. |
@@ -278,6 +284,59 @@ For native Codex, `message_id` is a correlation ID, not a deduplication key.
 A timeout leaves delivery uncertain; inspect the worker before retrying.
 `list_messages` reports that native queue listing is unavailable; use
 `read_agent_output` to inspect progress. Structured queue behavior is unchanged.
+
+### Projects and multiple worktrees
+
+AoE projects are registered directories. Assigning a project gives the agent its
+repository in the workspace; it is not merely a label. Register existing paths
+with `create_project`, then pass `projects` to `create_agent` instead of `path`:
+
+```json
+{
+  "projects": ["backend", "frontend"],
+  "tool": "codex",
+  "title": "Implement checkout",
+  "idempotency_key": "checkout-worker-1",
+  "worktree_branch": "feature/checkout"
+}
+```
+
+The first project is primary. Multiple projects default to new managed
+worktrees, one per repository. Alternatively, pass `path` plus
+`extra_repo_paths`. `base_branch` chooses a shared base; `repo_bases` accepts
+`{"repo": "/absolute/repository/path", "base_branch": "develop"}` entries
+for individual bases. Registered project defaults apply when no override is
+provided. Inspect `list_agents` for each workspace's repository and worktree
+paths.
+
+Use `assign_agent_project` with `session_id` and a registered project name or
+absolute repository path to attach a project afterward. An in-place checkout
+must be clean before conversion; a managed worktree moves with its changes.
+Attachment may move the workspace and restart an idle worker. Active turns
+are refused. Inspect `worker`, `worker_message`, and `warnings`: an attachment
+can succeed even if restarting the worker fails.
+
+For another branch of the same repository, use `add_agent_worktree`:
+
+```json
+{
+  "session_id": "<aoe-session-id>",
+  "project": "backend",
+  "name": "backend-review",
+  "branch": "review/checkout",
+  "base_branch": "main"
+}
+```
+
+Each worktree needs a unique directory name and a branch not checked out
+elsewhere. `attach_existing_branch: true` opts into an existing branch and
+preserves it during AoE branch cleanup. Ordinary project assignment continues
+to reject duplicates. Attachments are not retry-idempotent; inspect the agent
+before repeating a timed-out request.
+
+Project update/delete operations take `name` and optional `scope` (`global` or
+`profile`, default `global`). Use the scope returned by `list_projects` when
+modifying a profile-specific project.
 
 The MCP process uses stdio and makes authenticated HTTP requests to the
 same daemon endpoints used by the dashboard. Existing daemon authentication,
