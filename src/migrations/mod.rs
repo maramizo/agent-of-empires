@@ -41,7 +41,11 @@ use anyhow::Result;
 use std::fs;
 use tracing::{debug, info};
 
-const CURRENT_VERSION: u32 = 27;
+mod v028_monitor_store;
+mod v029_terminal_launch_options;
+mod v030_fork_update_cache;
+
+const CURRENT_VERSION: u32 = 30;
 const VERSION_FILE: &str = ".schema_version";
 
 struct Migration {
@@ -185,6 +189,21 @@ const MIGRATIONS: &[Migration] = &[
         version: 27,
         name: "isolate_sandbox_stores",
         run: v027_isolate_sandbox_stores::run,
+    },
+    Migration {
+        version: 28,
+        name: "monitor_store",
+        run: v028_monitor_store::run,
+    },
+    Migration {
+        version: 29,
+        name: "terminal_launch_options",
+        run: v029_terminal_launch_options::run,
+    },
+    Migration {
+        version: 30,
+        name: "Clear upstream update cache",
+        run: v030_fork_update_cache::run,
     },
 ];
 

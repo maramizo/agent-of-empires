@@ -88,6 +88,7 @@ pub(crate) enum StatusSource {
 
 /// Shared application state accessible by all request handlers.
 pub struct AppState {
+    pub(crate) monitors: super::monitors::Runtime,
     pub profile: String,
     pub read_only: bool,
     /// CityHall client mode, resolved once at launch from `AOE_CITYHALL_MODE`.

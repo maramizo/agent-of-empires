@@ -40,8 +40,6 @@ pub fn perform_restart(request: RestartRequest) -> RestartResult {
         wake_message,
     } = request;
 
-    let title = instance.title.clone();
-    let tool = instance.tool.clone();
     let before = instance.clone();
 
     // Honor the same on_launch / before_start hook timeout the startup-recovery
@@ -61,7 +59,7 @@ pub fn perform_restart(request: RestartRequest) -> RestartResult {
     // rather than waiting out the up-to-3s pane-readiness probe.
     let should_wake = should_send_restart_wake(&outcome);
     if should_wake && !wake_message.is_empty() {
-        spawn_wake_worker(session_id.clone(), title, tool, wake_message);
+        spawn_wake_worker(instance.clone(), wake_message);
     }
 
     RestartResult {
@@ -84,40 +82,17 @@ fn should_send_restart_wake(outcome: &Result<StartOutcome, String>) -> bool {
 /// Wait for the restarted pane to become live and past its boot shell, then
 /// send the wake-up message. Best-effort: a failure to spawn or send is logged,
 /// never fatal.
-fn spawn_wake_worker(session_id: String, title: String, tool: String, wake_message: String) {
+fn spawn_wake_worker(instance: Instance, wake_message: String) {
     let spawn_result = std::thread::Builder::new()
-        .name(format!("aoe-restart-wake/{}", session_id))
+        .name(format!("aoe-restart-wake/{}", instance.id))
         .stack_size(128 * 1024)
         .spawn(move || {
-            let Ok(tmux_session) = crate::tmux::Session::new(&session_id, &title) else {
-                return;
-            };
-            let deadline = std::time::Instant::now() + std::time::Duration::from_millis(3000);
-            loop {
-                if !tmux_session.exists() {
-                    return;
-                }
-                let pane_alive = !tmux_session.is_pane_dead();
-                let hook_active = crate::hooks::read_hook_status(&session_id).is_some();
-                if pane_alive && (hook_active || !tmux_session.is_pane_running_shell()) {
-                    break;
-                }
-                if std::time::Instant::now() >= deadline {
-                    break;
-                }
-                std::thread::sleep(std::time::Duration::from_millis(50));
-            }
-
-            if !tmux_session.exists() {
-                return;
-            }
-            let delay = crate::agents::send_keys_enter_delay(&tool);
-            if let Err(e) = tmux_session.send_keys_with_delay(&wake_message, delay) {
-                tracing::warn!(target: "session.restart", "failed to send wake-up message after restart: {}", e);
+            if let Err(error) = instance.send_prompt(&wake_message) {
+                tracing::warn!("Failed to deliver restart wake message: {error}");
             }
         });
-    if let Err(err) = spawn_result {
-        tracing::warn!(target: "session.restart", ?err, "failed to spawn restart wake-up worker");
+    if let Err(error) = spawn_result {
+        tracing::warn!("Failed to spawn restart wake worker: {error}");
     }
 }
 

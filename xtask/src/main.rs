@@ -166,7 +166,7 @@ fn run_dev(args: DevArgs) {
 
     // Honor CARGO_TARGET_DIR; cargo wrote the debug binary under it.
     let target_dir = std::env::var("CARGO_TARGET_DIR").unwrap_or_else(|_| "target".to_string());
-    let bin = Path::new(&target_dir).join("debug").join("aoe");
+    let bin = Path::new(&target_dir).join("debug").join("aoe2");
 
     let shutdown = Arc::new(AtomicBool::new(false));
     {
@@ -586,7 +586,7 @@ mod tests {
     #[test]
     fn unrelated_paths_are_ignored() {
         assert!(!is_watch_relevant(Path::new("README.md")));
-        assert!(!is_watch_relevant(Path::new("target/debug/aoe")));
+        assert!(!is_watch_relevant(Path::new("target/debug/aoe2")));
         assert!(!is_watch_relevant(Path::new(".git/index")));
         assert!(!is_watch_relevant(Path::new("Cargo.toml.swp")));
         assert!(!is_watch_relevant(Path::new("web/src/App.tsx")));

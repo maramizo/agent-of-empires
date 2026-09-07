@@ -271,10 +271,13 @@ embedding a bearer token in the query string.
 
 ## POST /api/sessions/{id}/send
 
-Type a message into the agent and press Enter, the same way the TUI's
-send-message dialog and the `aoe send` CLI do. Honors the per-agent
-paste-burst delay (e.g. Codex needs ~150 ms between text and Enter so
-its burst-detection window expires before Enter arrives).
+Deliver a prompt using the same backend as the TUI Send Message dialog and
+`aoe send`. Local terminal Codex agents use `codex queue` with the exact native
+thread ID loaded in that pane's dedicated app server. The terminal and queue
+command share a local socket. A newly started pane has up to ten seconds to
+establish that connection; older terminals need a restart. Missing identity or queue failure
+returns an error; delivery never falls back to typing. Other terminal agents
+receive literal text followed by Enter.
 
 **Request body** (JSON)
 
@@ -282,15 +285,17 @@ its burst-detection window expires before Enter arrives).
 { "message": "review the diff and pick the smallest fix" }
 ```
 
-`message` is sent literally. Newlines inside the string are sent as
-shift-Enter (line break in the agent's input box) and a final Enter
-submits the whole message.
+Messages, including embedded newlines, are passed literally to Codex. Native
+queue success means accepted, not completed, and retries can duplicate delivery.
+See [Python monitors](guides/monitors.md#python-and-agent-actions) for launch
+choices (`model`, `effort`, `fast_mode`), supported configurations, and examples.
 
 **Responses**
 
 | Status | Body | When |
 | --- | --- | --- |
-| `200` | `{"sent": true}` | Keys delivered to the tmux pane |
+| `200` | `{"sent":true,"backend":"codex","disposition":"queued","thread_id":"...","idempotent":false}` | Accepted by native Codex queue |
+| `200` | `{"sent":true,"backend":"terminal","disposition":"submitted","idempotent":false}` | Submitted to another agent through its terminal |
 | `400` | `{"error": "message_empty"}` | `message` is empty or whitespace-only |
 | `400` | `{"error": "acp_mode_unsupported"}` | Session is structured-view/ACP mode and has no tmux pane |
 | `403` | `{"error": "read_only"}` | Server is in read-only mode |
@@ -298,7 +303,7 @@ submits the whole message.
 | `409` | `{"error": "session_not_running"}` | Session exists but the tmux pane is gone |
 | `409` | `{"error": "resume_failed", "message": "...", "resume_session_id": "..."}` | Auto-revive tried to resume a stored conversation, but the pane exited before AoE could prove the ID invalid. The ID is preserved for explicit retry or replacement. |
 | `409` | `{"error": "session_transient", "status": "..."}` | Session is mid-lifecycle and cannot accept input yet |
-| `500` | `{"error": "tmux_error"}` or `{"error": "internal"}` | Unexpected failure (logged server-side) |
+| `500` | `{"error":"delivery_failed","message":"..."}` or `{"error":"internal"}` | Identity, queue, terminal, or unexpected delivery failure |
 
 Concurrent POSTs to the same `id` are serialized server-side, so two
 orchestrators racing on the same session won't interleave keystrokes
@@ -363,3 +368,24 @@ For long-running prompts, prefer polling status via
 when status returns to `Idle`. Status transitions are also broadcast
 to push subscribers if the dashboard's push notifications are
 configured.
+
+## External conversation onboarding
+
+- `GET /api/external-conversations?agent=codex` lists external conversations in the daemon's current profile. `agent` accepts `codex` (default) or `claude`.
+- `POST /api/sessions/onboard` accepts `conversation_id`, optional `agent`, `title`, and `group`. The server derives the working directory from the saved conversation; client-supplied paths are rejected.
+
+A new registration returns HTTP 201; an already-managed conversation returns HTTP 200 with `created: false`. Both return `session_id` (AoE identity), `conversation_id` (native identity), `agent`, `title`, `path`, and `view`. Registration does not start an agent or stop the external process. Missing conversations return 404; invalid or unavailable working directories return 400. Both endpoints require normal daemon authentication and are unavailable in read-only or CityHall mode.
+
+See [orchestrator onboarding](./guides/mcp-servers.md#onboarding-external-conversations) for the handoff workflow.
+
+
+## Python monitors
+
+The daemon exposes `GET/POST /api/monitors`, `PATCH/DELETE /api/monitors/{id}`,
+`POST /api/monitors/{id}/run`, `GET /api/monitors/{id}/runs`, and
+`POST /api/monitors/{id}/cancel`. All require normal daemon authentication and
+are unavailable in read-only or CityHall mode. A run request returns HTTP 202
+with a run record; poll the runs endpoint for completion.
+
+See [Python monitors](./guides/monitors.md) for creation parameters, scheduling,
+the Python agent client, and dry-mode semantics.

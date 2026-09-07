@@ -355,7 +355,7 @@ hotkey = "Alt+t"
     // every tmux call through an explicit `-S <socket>` (#2608), so point
     // `AOE_TMUX_SOCKET` at the harness's per-test socket to exercise the
     // sweep there instead of aoe's own app-dir socket.
-    let aoe_binary = env!("CARGO_BIN_EXE_aoe");
+    let aoe_binary = env!("CARGO_BIN_EXE_aoe2");
     let remove = Command::new(aoe_binary)
         .args(["remove", &session_id, "--force"])
         .env("HOME", h.home_path())

@@ -467,6 +467,7 @@ async fn admit_and_create(
         agent_name: None,
         agent_model: req.model_id.clone(),
         agent_effort: None,
+        fast_mode: None,
         import_acp_session_id: None,
         fork_seed: None,
     };

@@ -152,7 +152,7 @@ fn runner_reports_native_prompt_complete_over_control_socket() {
     let control = workers.join(format!("{session_id}.control.sock"));
     let record = workers.join(format!("{session_id}.json"));
 
-    let bin = env!("CARGO_BIN_EXE_aoe");
+    let bin = env!("CARGO_BIN_EXE_aoe2");
     let mut child: Child = Command::new(bin)
         .args([
             "__acp-runner",
@@ -237,7 +237,7 @@ fn runner_accepts_next_relay_after_outbound_half_close() {
     let workers = app_dir(&home, &xdg).join("acp-workers");
     let socket = workers.join(format!("{session_id}.sock"));
     let record = workers.join(format!("{session_id}.json"));
-    let bin = env!("CARGO_BIN_EXE_aoe");
+    let bin = env!("CARGO_BIN_EXE_aoe2");
     let _child = KillOnDrop(
         Command::new(bin)
             .args([
@@ -383,7 +383,7 @@ for line in sys.stdin:
     let socket = workers.join(format!("{session_id}.sock"));
     let control = workers.join(format!("{session_id}.control.sock"));
     let record = workers.join(format!("{session_id}.json"));
-    let bin = env!("CARGO_BIN_EXE_aoe");
+    let bin = env!("CARGO_BIN_EXE_aoe2");
     let spawn_runner = |delay: &str, fail_load: bool| {
         Command::new(bin)
             .args([
@@ -600,7 +600,7 @@ for line in sys.stdin:
     let control = workers.join(format!("{session_id}.control.sock"));
     let record = workers.join(format!("{session_id}.json"));
 
-    let bin = env!("CARGO_BIN_EXE_aoe");
+    let bin = env!("CARGO_BIN_EXE_aoe2");
     let _child = KillOnDrop(
         Command::new(bin)
             .args([
@@ -742,7 +742,7 @@ fn runner_load_uses_requested_id_and_caches_response() {
     let control = workers.join(format!("{session_id}.control.sock"));
     let record = workers.join(format!("{session_id}.json"));
 
-    let bin = env!("CARGO_BIN_EXE_aoe");
+    let bin = env!("CARGO_BIN_EXE_aoe2");
     let _child = KillOnDrop(
         Command::new(bin)
             .args([
@@ -912,7 +912,7 @@ for line in sys.stdin:
     let control = workers.join(format!("{session_id}.control.sock"));
     let record = workers.join(format!("{session_id}.json"));
 
-    let bin = env!("CARGO_BIN_EXE_aoe");
+    let bin = env!("CARGO_BIN_EXE_aoe2");
     let _child = KillOnDrop(
         Command::new(bin)
             .args([

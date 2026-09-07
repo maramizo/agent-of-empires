@@ -43,7 +43,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
-          images: ${{ env.REGISTRY }}/agent-of-empires/aoe-sandbox
+          images: ${{ env.REGISTRY }}/maramizo/aoe2-sandbox
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
@@ -91,7 +91,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
-          images: ${{ env.REGISTRY }}/agent-of-empires/aoe-dev-sandbox
+          images: ${{ env.REGISTRY }}/maramizo/aoe2-dev-sandbox
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}

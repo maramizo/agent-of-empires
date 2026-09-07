@@ -82,6 +82,7 @@ fn build_test_app_state_impl(
         },
     ));
     Arc::new(AppState {
+        monitors: super::monitors::Runtime::new("http://127.0.0.1:1".into()),
         profile: "test".to_string(),
         read_only: false,
         cityhall_mode,

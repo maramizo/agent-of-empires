@@ -33,8 +33,14 @@ enum SendKeysError {
     Tmux(anyhow::Error),
 }
 
-type SendKeysResult =
-    Result<(EnsureReadyOutcome, Instance), Box<(Instance, EnsureReadyOutcome, SendKeysError)>>;
+type SendKeysResult = Result<
+    (
+        EnsureReadyOutcome,
+        Instance,
+        crate::session::prompt_delivery::PromptDelivery,
+    ),
+    Box<(Instance, EnsureReadyOutcome, SendKeysError)>,
+>;
 
 pub async fn send_message(
     State(state): State<Arc<AppState>>,
@@ -81,7 +87,6 @@ pub async fn send_message(
     drop(instances);
 
     let sync_base = instance.clone();
-    let tool = instance.tool.clone();
     let message = req.message;
     let revive = req.revive;
     let send_result = tokio::task::spawn_blocking(move || -> SendKeysResult {
@@ -144,16 +149,15 @@ pub async fn send_message(
         if !tmux_session.exists() {
             return Err(Box::new((inst_owned, outcome, SendKeysError::NotRunning)));
         }
-        let delay = crate::agents::send_keys_enter_delay(&tool);
-        if let Err(e) = tmux_session.send_keys_with_delay(&message, delay) {
-            return Err(Box::new((inst_owned, outcome, SendKeysError::Tmux(e))));
+        match inst_owned.send_prompt(&message) {
+            Ok(delivery) => Ok((outcome, inst_owned, delivery)),
+            Err(error) => Err(Box::new((inst_owned, outcome, SendKeysError::Tmux(error)))),
         }
-        Ok((outcome, inst_owned))
     })
     .await;
 
     match send_result {
-        Ok(Ok((outcome, started))) => {
+        Ok(Ok((outcome, started, delivery))) => {
             // ensure_pane_ready mutated `started` (status, agent_session_id,
             // last_start_time, last_error) on the clone. Sync those back to
             // the live entry so the next request sees a coherent view;
@@ -171,7 +175,11 @@ pub async fn send_message(
             } else {
                 // Session was deleted between the send and the stamp; nothing
                 // left to persist.
-                return (StatusCode::OK, Json(serde_json::json!({"sent": true}))).into_response();
+                return (
+                    StatusCode::OK,
+                    Json(serde_json::to_value(&delivery).unwrap()),
+                )
+                    .into_response();
             };
             drop(instances);
             let id_for_save = id.clone();
@@ -197,7 +205,11 @@ pub async fn send_message(
                     }
                 }
             });
-            (StatusCode::OK, Json(serde_json::json!({"sent": true}))).into_response()
+            (
+                StatusCode::OK,
+                Json(serde_json::to_value(&delivery).unwrap()),
+            )
+                .into_response()
         }
         Ok(Err(boxed)) => {
             let (started, outcome, send_err) = *boxed;
@@ -271,12 +283,12 @@ pub async fn send_message(
                     if let Some(i) = instances.iter_mut().find(|i| i.id == id) {
                         if apply_post_restart_sync(i, &sync_base, &started) {
                             i.status = crate::session::Status::Error;
-                            i.last_error = Some(msg);
+                            i.last_error = Some(msg.clone());
                         }
                     }
                     (
                         StatusCode::INTERNAL_SERVER_ERROR,
-                        Json(serde_json::json!({"error": "tmux_error"})),
+                        Json(serde_json::json!({"error": "delivery_failed", "message": msg})),
                     )
                         .into_response()
                 }

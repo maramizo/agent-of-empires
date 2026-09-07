@@ -9,7 +9,7 @@ use serial_test::parallel;
 #[parallel]
 fn mcp_stdio_keeps_stdout_and_local_state_clean() {
     let home = tempfile::tempdir().unwrap();
-    let mut child = Command::new(env!("CARGO_BIN_EXE_aoe"))
+    let mut child = Command::new(env!("CARGO_BIN_EXE_aoe2"))
         .args(["mcp", "serve", "--url", "http://127.0.0.1:1"])
         .env("HOME", home.path())
         .env("XDG_CONFIG_HOME", home.path())
@@ -63,6 +63,8 @@ fn mcp_stdio_keeps_stdout_and_local_state_clean() {
         .map(|tool| tool["name"].as_str().unwrap())
         .collect();
     assert!(names.contains(&"create_agent"));
+    assert!(names.contains(&"list_external_conversations"));
+    assert!(names.contains(&"onboard_conversation"));
     assert!(names.contains(&"create_project"));
     assert!(names.contains(&"assign_agent_project"));
     assert!(names.contains(&"add_agent_worktree"));

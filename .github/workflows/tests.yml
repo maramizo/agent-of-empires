@@ -557,7 +557,7 @@ jobs:
         working-directory: web
         env:
           AOE_COVERAGE: '1'
-          AOE_E2E_BINARY: ${{ github.workspace }}/target/debug/aoe
+          AOE_E2E_BINARY: ${{ github.workspace }}/target/debug/aoe2
         run: npx playwright test --config=playwright.live.config.ts --shard=${{ matrix.shard }}/2
       - name: Build LCOV from collected Playwright coverage
         working-directory: web

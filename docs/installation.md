@@ -11,7 +11,7 @@ dependencies (SQLite, libgit2, OpenSSL, liblzma, and AWS-LC). Most platforms
 are covered by a stock `cc`; targets without pre-generated AWS-LC bindings
 also need CMake.
 
-## Install Agent of Empires
+## Install Agent of Empires 2
 
 ### Quick Install (Recommended)
 
@@ -19,25 +19,19 @@ Run the install script:
 
 ```bash
 curl -fsSL \
-  https://raw.githubusercontent.com/agent-of-empires/agent-of-empires/main/scripts/install.sh \
+  https://raw.githubusercontent.com/maramizo/agent-of-empires-2/main/scripts/install.sh \
   | bash
-```
-
-### Homebrew
-
-```bash
-brew install aoe
 ```
 
 ### Build from Source
 
 ```bash
-git clone https://github.com/agent-of-empires/agent-of-empires
-cd agent-of-empires
+git clone https://github.com/maramizo/agent-of-empires-2
+cd agent-of-empires-2
 cargo build --release
 ```
 
-The binary will be at `target/release/aoe`.
+The binary will be at `target/release/aoe2`.
 
 To include the web dashboard (browser access):
 
@@ -50,16 +44,16 @@ This requires Node.js and npm. The web frontend is built automatically during co
 ## Verify Installation
 
 ```bash
-aoe --version
+aoe2 --version
 ```
 
 ## Updating
 
 ```bash
-aoe update
+aoe2 update
 ```
 
-The `aoe update` command detects how aoe was installed (Homebrew, the curl install script, Nix, or Cargo) and dispatches to the right upgrade mechanism. For Nix and Cargo it prints the manual upgrade command instead of attempting an automatic update, since those cases need external tooling.
+The `aoe2 update` command detects how aoe2 was installed (the install script, Nix, Cargo, or a custom Homebrew formula) and dispatches to the right upgrade mechanism. For Nix and Cargo it prints the manual upgrade command instead of attempting an automatic update, since those cases need external tooling.
 
 Inside the TUI, press `u` when the update bar is visible to run the same flow without leaving the app. Press `Ctrl+x` to dismiss the bar for the current session.
 
@@ -68,7 +62,15 @@ If you installed shell completions as a static file, regenerate it after an upda
 ## Uninstall
 
 ```bash
-aoe uninstall
+aoe2 uninstall
 ```
 
 Prompts to remove the binary, configuration (the app data dir), and tmux settings.
+
+## Upgrading from this AoE fork
+
+The executable is now `aoe2`. Releases and updates come from
+[`maramizo/agent-of-empires-2`](https://github.com/maramizo/agent-of-empires-2/releases).
+Existing app data directories, session IDs, tmux names, monitor files, and
+`AOE_*` environment variables are preserved. Update MCP client commands to
+`aoe2 mcp serve` and reconnect them to load the new executable.

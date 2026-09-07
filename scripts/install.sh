@@ -1,10 +1,10 @@
 #!/bin/bash
 set -e
 
-REPO="agent-of-empires/agent-of-empires"
+REPO="maramizo/agent-of-empires-2"
 DEFAULT_INSTALL_DIR="$HOME/.local/bin"
 INSTALL_DIR="${INSTALL_DIR:-$DEFAULT_INSTALL_DIR}"
-BINARY_NAME="aoe"
+BINARY_NAME="aoe2"
 
 # Matches the manylinux_2_28 container the release workflow builds in
 # (.github/workflows/release.yml, env.LINUX_GLIBC_FLOOR). Bump together.
@@ -17,7 +17,7 @@ error() { printf "\033[31m[error]\033[0m %s\n" "$1" >&2; exit 1; }
 
 # Fail fast if the system's glibc is older than the released binary needs.
 # Without this, the download "succeeds" and the user only finds out at the
-# first `aoe` invocation that libc.so.6 doesn't have GLIBC_2.xx. Skips
+# first `aoe2` invocation that libc.so.6 doesn't have GLIBC_2.xx. Skips
 # silently when we can't tell (non-Linux, no ldd, unparseable version).
 check_glibc() {
     [ "$(uname -s)" = "Linux" ] || return 0
@@ -29,8 +29,7 @@ check_glibc() {
         error "Your system's glibc ($sys_glibc) is older than this binary requires ($MIN_GLIBC).
 Options:
   - Use a newer distro (Ubuntu 20.04+, Debian 11+, RHEL 8+, Amazon Linux 2/2023)
-  - Install via Homebrew: brew install aoe
-  - Build from source: https://www.agent-of-empires.com/docs/installation/#build-from-source"
+  - Build from source: https://github.com/maramizo/agent-of-empires-2#build-from-source"
     fi
 }
 
@@ -91,27 +90,27 @@ main() {
     fi
     success "Latest version: $version"
 
-    download_url="https://github.com/${REPO}/releases/download/${version}/aoe-${platform}.tar.gz"
+    download_url="https://github.com/${REPO}/releases/download/${version}/aoe2-${platform}.tar.gz"
     info "Downloading from: $download_url"
 
     tmp_dir=$(mktemp -d)
     trap 'rm -rf "$tmp_dir"' EXIT
 
-    curl -fsSL "$download_url" -o "$tmp_dir/aoe.tar.gz" || error "Download failed"
+    curl -fsSL "$download_url" -o "$tmp_dir/aoe2.tar.gz" || error "Download failed"
     success "Downloaded successfully"
 
     info "Extracting..."
-    tar xzf "$tmp_dir/aoe.tar.gz" -C "$tmp_dir"
+    tar xzf "$tmp_dir/aoe2.tar.gz" -C "$tmp_dir"
 
     mkdir -p "$INSTALL_DIR" 2>/dev/null || true
 
     info "Installing to $INSTALL_DIR..."
     if [ -w "$INSTALL_DIR" ] || [ ! -e "$INSTALL_DIR" ]; then
-        mv "$tmp_dir/aoe-${platform}" "$INSTALL_DIR/$BINARY_NAME"
+        mv "$tmp_dir/aoe2-${platform}" "$INSTALL_DIR/$BINARY_NAME"
     else
         warn "$INSTALL_DIR is not user-writable; falling back to sudo."
         warn "Consider re-running with INSTALL_DIR=\$HOME/.local/bin to avoid this."
-        sudo mv "$tmp_dir/aoe-${platform}" "$INSTALL_DIR/$BINARY_NAME"
+        sudo mv "$tmp_dir/aoe2-${platform}" "$INSTALL_DIR/$BINARY_NAME"
     fi
     chmod +x "$INSTALL_DIR/$BINARY_NAME"
 
@@ -121,7 +120,7 @@ main() {
     # versions of this script defaulted there; if a user re-runs install.sh
     # with the new ~/.local/bin default they end up with two binaries and
     # whichever directory comes first on PATH wins, which is confusing.
-    LEGACY_PATH=/usr/local/bin/aoe
+    LEGACY_PATH=/usr/local/bin/aoe2
     if [ -e "$LEGACY_PATH" ] && [ "$INSTALL_DIR/$BINARY_NAME" != "$LEGACY_PATH" ]; then
         echo ""
         warn "Found a previous install at $LEGACY_PATH."
@@ -154,9 +153,9 @@ main() {
     fi
 
     echo ""
-    success "Run 'aoe' to get started!"
+    success "Run 'aoe2' to get started!"
     echo ""
-    info "For shell completions, see: https://www.agent-of-empires.com/guides/shell-completions/"
+    info "For shell completions, see: https://github.com/maramizo/agent-of-empires-2/blob/main/docs/guides/shell-completions.md"
 }
 
 main "$@"

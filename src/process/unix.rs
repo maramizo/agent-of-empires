@@ -20,3 +20,14 @@ fn signal_process_group(child: &Child, signal: nix::sys::signal::Signal) {
     };
     let _ = nix::sys::signal::killpg(nix::unistd::Pid::from_raw(pid), signal);
 }
+
+pub(super) fn kill_group_by_pid(pid: u32) {
+    if let Ok(pid) = i32::try_from(pid) {
+        if pid > 1 {
+            let _ = nix::sys::signal::killpg(
+                nix::unistd::Pid::from_raw(pid),
+                nix::sys::signal::Signal::SIGKILL,
+            );
+        }
+    }
+}

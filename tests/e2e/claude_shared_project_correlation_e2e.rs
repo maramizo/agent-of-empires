@@ -96,7 +96,7 @@ fn parse_session_id(add_stdout: &str) -> String {
 /// `build_exclusion_set`'s peer scan and holds the poller open.
 fn install_claude_shim(h: &mut TuiTestHarness) {
     let bin = h.install_path_command("claude");
-    let aoe = env!("CARGO_BIN_EXE_aoe");
+    let aoe = env!("CARGO_BIN_EXE_aoe2");
     // If AOE_INSTANCE_ID is unset the launch-env contract broke; fail loudly
     // (exit 3 + marker) rather than silently pass. The test writes the role file
     // before launching, so the shim normally finds it on the first check; the

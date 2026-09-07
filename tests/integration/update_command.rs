@@ -1,7 +1,7 @@
-//! Smoke tests for `aoe update --check` and `--dry-run`.
+//! Smoke tests for `aoe2 update --check` and `--dry-run`.
 //!
 //! These spawn a small axum fixture server that serves canned GitHub
-//! releases JSON, then run the `aoe` binary as a subprocess pointed at
+//! releases JSON, then run the `aoe2` binary as a subprocess pointed at
 //! the fixture via `AOE_UPDATE_API_BASE`. Hermetic — never touches the
 //! real GitHub API, so they pass on rate-limited CI runners.
 //!
@@ -13,11 +13,11 @@ use std::sync::mpsc;
 use std::thread;
 
 fn aoe_binary() -> &'static str {
-    env!("CARGO_BIN_EXE_aoe")
+    env!("CARGO_BIN_EXE_aoe2")
 }
 
 /// Start an axum server that returns canned JSON for the two GitHub
-/// release endpoints aoe queries. Returns the base URL plus a shutdown
+/// release endpoints aoe2 queries. Returns the base URL plus a shutdown
 /// channel; dropping the sender doesn't matter (the thread exits when
 /// the process does), the channel is here so a future test can stop
 /// the server early if needed.
@@ -55,7 +55,7 @@ fn spawn_fixture(latest_version: &str) -> FixtureServer {
 
             let app = axum::Router::new()
                 .route(
-                    "/repos/agent-of-empires/agent-of-empires/releases/latest",
+                    "/repos/maramizo/agent-of-empires-2/releases/latest",
                     axum::routing::get(move || {
                         let body = release_json();
                         async move {
@@ -67,7 +67,7 @@ fn spawn_fixture(latest_version: &str) -> FixtureServer {
                     }),
                 )
                 .route(
-                    "/repos/agent-of-empires/agent-of-empires/releases",
+                    "/repos/maramizo/agent-of-empires-2/releases",
                     axum::routing::get(move || {
                         let body = format!("[{}]", releases_json());
                         async move {
@@ -111,7 +111,7 @@ fn update_check_prints_three_lines_and_exits_zero() {
         .env("XDG_CONFIG_HOME", tmp.path())
         .env("AOE_UPDATE_API_BASE", &fixture.base_url)
         .output()
-        .expect("running aoe update --check");
+        .expect("running aoe2 update --check");
 
     assert!(
         output.status.success(),
@@ -135,7 +135,7 @@ fn update_dry_run_prints_prompt_block_and_exits_zero() {
         .env("XDG_CONFIG_HOME", tmp.path())
         .env("AOE_UPDATE_API_BASE", &fixture.base_url)
         .output()
-        .expect("running aoe update --dry-run");
+        .expect("running aoe2 update --dry-run");
 
     assert!(
         output.status.success(),
@@ -151,7 +151,7 @@ fn update_dry_run_prints_prompt_block_and_exits_zero() {
     // refusal message is acceptable here — both prove the binary
     // exited cleanly with the right shape of output.
     assert!(
-        stdout.contains("Update v") || stdout.contains("Couldn't determine how aoe was installed"),
+        stdout.contains("Update v") || stdout.contains("Couldn't determine how aoe2 was installed"),
         "unexpected dry-run stdout: {stdout}"
     );
 }
@@ -168,7 +168,7 @@ fn update_check_no_update_available_when_versions_match() {
         .env("XDG_CONFIG_HOME", tmp.path())
         .env("AOE_UPDATE_API_BASE", &fixture.base_url)
         .output()
-        .expect("running aoe update --check");
+        .expect("running aoe2 update --check");
 
     assert!(output.status.success());
     let stdout = String::from_utf8(output.stdout).unwrap();

@@ -41,6 +41,12 @@ const PAGES = [
       "Per-repo configuration and hooks for Agent of Empires sessions.",
   },
   {
+    source: "docs/guides/monitors.md",
+    dest: "guides/monitors.md",
+    title: "Python Monitors",
+    description: "Schedule Python scripts and coordinate agents with live and dry runs.",
+  },
+  {
     source: "docs/guides/mcp-servers.md",
     dest: "guides/mcp-servers.md",
     title: "MCP Servers",
@@ -359,6 +365,7 @@ const URL_MAP = {
   "docs/guides/shell-completions.md": "/guides/shell-completions/",
   "docs/guides/diff-view.md": "/guides/diff-view/",
   "docs/guides/repo-config.md": "/guides/repo-config/",
+  "docs/guides/monitors.md": "/guides/monitors/",
   "docs/guides/mcp-servers.md": "/guides/mcp-servers/",
   "docs/guides/sandbox.md": "/guides/sandbox/",
   "docs/guides/otari-telemetry.md": "/guides/otari-telemetry/",
@@ -381,7 +388,7 @@ const URL_MAP = {
 };
 
 const GITHUB_BASE =
-  "https://github.com/agent-of-empires/agent-of-empires/blob/main/";
+  "https://github.com/maramizo/agent-of-empires-2/blob/main/";
 
 function rewriteLinks(content, sourceDir) {
   // Rewrite markdown links to .md files: [text](target.md) or [text](target.md#anchor)

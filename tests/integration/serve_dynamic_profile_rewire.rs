@@ -248,7 +248,7 @@ impl ServeDaemon {
     /// a fresh `HOME`. Panics on startup failure so the test gives a
     /// useful diagnostic.
     fn spawn() -> Self {
-        let aoe = env!("CARGO_BIN_EXE_aoe");
+        let aoe = env!("CARGO_BIN_EXE_aoe2");
         let home = tempfile::tempdir().expect("home tempdir");
         let port = pick_free_port();
 

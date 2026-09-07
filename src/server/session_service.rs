@@ -1704,6 +1704,7 @@ fn spec_payload_hash(spec: &StructuredSessionSpec) -> String {
         "acp_mode_id",
         spec.acp_mode_id.as_deref().unwrap_or_default(),
     );
+    field("fast_mode", &format!("{:?}", spec.fast_mode));
     field("view", &format!("{:?}", spec.view));
     field("agent_name", spec.agent_name.as_deref().unwrap_or_default());
     field(
@@ -1773,6 +1774,7 @@ mod tests {
             agent_name: Some("claude".to_string()),
             agent_model: None,
             agent_effort: None,
+            fast_mode: None,
             import_acp_session_id: None,
             fork_seed: None,
         }

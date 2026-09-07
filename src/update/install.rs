@@ -54,7 +54,7 @@ fn classify_path_prefix(binary_path: &Path, home: &Path) -> InstallMethod {
 }
 
 /// Layer Homebrew detection on top of the prefix classification:
-/// only return `Homebrew` if `brew list aoe` produced a path that
+/// only return `Homebrew` if `brew list aoe2` produced a path that
 /// canonicalizes to the same file as the running binary. Otherwise
 /// keep the prefix classification.
 fn classify_with_brew(
@@ -82,8 +82,8 @@ fn paths_canonicalize_equal(a: &Path, b: &Path) -> bool {
 pub fn detect_install_method() -> Result<InstallMethod> {
     let exe = std::env::current_exe().context("locating current executable")?;
     let exe = exe.canonicalize().unwrap_or(exe);
-    // Canonicalize home too, otherwise on macOS a binary at /tmp/.../.local/bin/aoe
-    // gets a canonicalized exe path of /private/tmp/.../.local/bin/aoe but home is
+    // Canonicalize home too, otherwise on macOS a binary at /tmp/.../.local/bin/aoe2
+    // gets a canonicalized exe path of /private/tmp/.../.local/bin/aoe2 but home is
     // still /tmp/..., the parent-prefix comparison fails, and the binary
     // misclassifies as Unknown. Same failure mode for any user whose HOME
     // resolves through a symlink. canonicalize() can fail (home doesn't exist
@@ -95,15 +95,15 @@ pub fn detect_install_method() -> Result<InstallMethod> {
     Ok(classify_with_brew(prefix, brew_path.as_deref(), &exe))
 }
 
-/// How long we wait for `brew list aoe` to come back before assuming
+/// How long we wait for `brew list aoe2` to come back before assuming
 /// brew is hung (locked formula DB, network-bound auto-update, etc.)
 /// and giving up on the probe. Detection runs on TUI startup, so this
 /// directly bounds startup latency on machines with brew.
 const BREW_PROBE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(2);
 
-/// Run `brew list aoe` and return the path to the installed binary, if any.
+/// Run `brew list aoe2` and return the path to the installed binary, if any.
 /// We parse the output (one path per line) and pick the line that ends in
-/// `/aoe` or `/bin/aoe`. If brew is not installed, the formula is not installed,
+/// `/aoe2` or `/bin/aoe2`. If brew is not installed, the formula is not installed,
 /// or the command fails for any other reason, return `None`.
 ///
 /// Bounded by `BREW_PROBE_TIMEOUT`: if brew doesn't return in time we
@@ -115,7 +115,7 @@ fn probe_brew_aoe_path() -> Option<PathBuf> {
 
 fn probe_brew_aoe_path_with_timeout(timeout: std::time::Duration) -> Option<PathBuf> {
     let mut cmd = Command::new("brew");
-    cmd.args(["list", "aoe"]);
+    cmd.args(["list", "aoe2"]);
 
     // run_with_timeout kills brew at the deadline and captures output in a
     // temporary regular file, so neither a hung brew nor a grandchild that
@@ -129,7 +129,7 @@ fn probe_brew_aoe_path_with_timeout(timeout: std::time::Duration) -> Option<Path
     let stdout = String::from_utf8(output.stdout).ok()?;
     for line in stdout.lines() {
         let trimmed = line.trim();
-        if trimmed.ends_with("/aoe") || trimmed.ends_with("/bin/aoe") {
+        if trimmed.ends_with("/aoe2") || trimmed.ends_with("/bin/aoe2") {
             return Some(PathBuf::from(trimmed));
         }
     }
@@ -165,12 +165,12 @@ pub fn current_platform_string() -> Result<&'static str> {
 }
 
 const DEFAULT_RELEASE_BASE: &str =
-    "https://github.com/agent-of-empires/agent-of-empires/releases/download";
+    "https://github.com/maramizo/agent-of-empires-2/releases/download";
 
 fn release_tarball_url(version: &str, platform: &str) -> String {
     let base =
         std::env::var("AOE_UPDATE_BASE_URL").unwrap_or_else(|_| DEFAULT_RELEASE_BASE.to_string());
-    format!("{base}/v{version}/aoe-{platform}.tar.gz")
+    format!("{base}/v{version}/aoe2-{platform}.tar.gz")
 }
 
 /// Download a release tarball to `dest`. Streams bytes; reports
@@ -213,7 +213,7 @@ async fn download_tarball(
 /// Extract a `.tar.gz` into `dest_dir`. Shells out to `tar xzf`, which is
 /// universally available on macOS/Linux and matches what `scripts/install.sh`
 /// does. Returns the path to the extracted binary
-/// (`dest_dir/aoe-{platform}`).
+/// (`dest_dir/aoe2-{platform}`).
 fn extract_tarball(tarball: &Path, dest_dir: &Path, platform: &str) -> Result<PathBuf> {
     let mut cmd = Command::new("tar");
     cmd.arg("xzf").arg(tarball).arg("-C").arg(dest_dir);
@@ -226,7 +226,7 @@ fn extract_tarball(tarball: &Path, dest_dir: &Path, platform: &str) -> Result<Pa
     if !status.success() {
         anyhow::bail!("tar extraction failed (exit {})", status);
     }
-    let extracted = dest_dir.join(format!("aoe-{platform}"));
+    let extracted = dest_dir.join(format!("aoe2-{platform}"));
     if !extracted.exists() {
         anyhow::bail!("extracted tarball did not contain {}", extracted.display());
     }
@@ -320,7 +320,7 @@ pub fn parent_is_writable(binary_path: &Path) -> bool {
         return false;
     };
     tempfile::Builder::new()
-        .prefix(".aoe-update-probe-")
+        .prefix(".aoe2-update-probe-")
         .tempfile_in(parent)
         .is_ok()
 }
@@ -341,7 +341,7 @@ pub async fn update_via_tarball(
     // Same-filesystem temp dir so the rename in atomic_replace works.
     let workdir = TempDir::new_in(parent).context("creating temp dir for update")?;
 
-    let tarball_path = workdir.path().join(format!("aoe-{platform}.tar.gz"));
+    let tarball_path = workdir.path().join(format!("aoe2-{platform}.tar.gz"));
     let url = release_tarball_url(version, platform);
     download_tarball(&url, &tarball_path, on_progress).await?;
 
@@ -351,7 +351,7 @@ pub async fn update_via_tarball(
     Ok(())
 }
 
-/// How long we wait for `brew info aoe --json=v2` before giving up on
+/// How long we wait for `brew info aoe2 --json=v2` before giving up on
 /// learning what version Homebrew has. Same rationale as
 /// `BREW_PROBE_TIMEOUT`: don't let a hung `brew` block the update flow.
 const BREW_INFO_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
@@ -367,7 +367,7 @@ struct BrewVersions {
 }
 
 /// Return the `versions.stable` Homebrew currently advertises for the
-/// `aoe` formula, or `None` if brew isn't installed, the formula isn't
+/// `aoe2` formula, or `None` if brew isn't installed, the formula isn't
 /// known, the probe times out, or the JSON can't be parsed.
 fn brew_available_version() -> Option<String> {
     brew_available_version_with_timeout(BREW_INFO_TIMEOUT)
@@ -375,7 +375,7 @@ fn brew_available_version() -> Option<String> {
 
 fn brew_available_version_with_timeout(timeout: std::time::Duration) -> Option<String> {
     let mut cmd = Command::new("brew");
-    cmd.args(["info", "aoe", "--json=v2"]);
+    cmd.args(["info", "aoe2", "--json=v2"]);
     // Reachable from `update_via_brew`, which runs inside
     // `IgnoreSignalsGuard`'s window; see `extract_tarball`.
     #[cfg(unix)]
@@ -462,7 +462,7 @@ fn update_via_brew(target_version: &str) -> Result<()> {
     }
 
     // Homebrew formulae lag behind GitHub releases by minutes to hours.
-    // If brew's formula is still on an older version, `brew upgrade aoe`
+    // If brew's formula is still on an older version, `brew upgrade aoe2`
     // exits 0 silently and leaves the user on the old binary, with the TUI
     // still nagging about an available update. Detect the lag up front
     // and bail with a clear explanation instead.
@@ -473,19 +473,21 @@ fn update_via_brew(target_version: &str) -> Result<()> {
     }
 
     let mut upgrade_cmd = Command::new("brew");
-    upgrade_cmd.args(["upgrade", "aoe"]);
+    upgrade_cmd.args(["upgrade", "aoe2"]);
     #[cfg(unix)]
     crate::process::reset_signals_on_exec(&mut upgrade_cmd);
-    let status = upgrade_cmd.status().context("running `brew upgrade aoe`")?;
+    let status = upgrade_cmd
+        .status()
+        .context("running `brew upgrade aoe2`")?;
     if !status.success() {
-        anyhow::bail!("`brew upgrade aoe` failed (exit {})", status);
+        anyhow::bail!("`brew upgrade aoe2` failed (exit {})", status);
     }
     Ok(())
 }
 
 fn nix_refusal_message() -> String {
-    "aoe was installed via Nix. Update by running:\n\
-     \n    nix run github:agent-of-empires/agent-of-empires\n\
+    "aoe2 was installed via Nix. Update by running:\n\
+     \n    nix run github:maramizo/agent-of-empires-2\n\
      \n(or rebuild your flake input)."
         .to_string()
 }
@@ -495,8 +497,8 @@ fn print_nix_refusal() {
 }
 
 fn cargo_refusal_message() -> String {
-    "aoe was installed via cargo. Update by running:\n\
-     \n    cargo install --git https://github.com/agent-of-empires/agent-of-empires aoe\n\
+    "aoe2 was installed via cargo. Update by running:\n\
+     \n    cargo install --git https://github.com/maramizo/agent-of-empires-2 agent-of-empires-2\n\
      \n(or `git pull && cargo install --path .` from a local clone)."
         .to_string()
 }
@@ -507,9 +509,9 @@ fn print_cargo_refusal() {
 
 fn unknown_refusal_message(binary_path: &Path) -> String {
     format!(
-        "Couldn't determine how aoe was installed at {}.\n\
+        "Couldn't determine how aoe2 was installed at {}.\n\
          Reinstall with:\n\
-         \n    curl -fsSL https://raw.githubusercontent.com/agent-of-empires/agent-of-empires/main/scripts/install.sh | bash\n",
+         \n    curl -fsSL https://raw.githubusercontent.com/maramizo/agent-of-empires-2/main/scripts/install.sh | bash\n",
         binary_path.display()
     )
 }
@@ -535,7 +537,7 @@ pub fn format_prompt_block(
             ("tarball install", binary_path.display().to_string())
         }
         InstallMethod::Nix => ("nix", "/nix/store (read-only)".to_string()),
-        InstallMethod::Cargo => ("cargo", "~/.cargo/bin/aoe".to_string()),
+        InstallMethod::Cargo => ("cargo", "~/.cargo/bin/aoe2".to_string()),
         InstallMethod::Unknown { binary_path } => ("unknown", binary_path.display().to_string()),
     };
     out.push_str(&format!("  Method:    {method_label}\n"));
@@ -585,19 +587,19 @@ mod tests {
 
     #[test]
     fn classifies_nix_store() {
-        let p = PathBuf::from("/nix/store/abc123-aoe-0.4.5/bin/aoe");
+        let p = PathBuf::from("/nix/store/abc123-aoe2-0.4.5/bin/aoe2");
         assert_eq!(classify_path_prefix(&p, &home()), InstallMethod::Nix);
     }
 
     #[test]
     fn classifies_cargo_bin() {
-        let p = home().join(".cargo/bin/aoe");
+        let p = home().join(".cargo/bin/aoe2");
         assert_eq!(classify_path_prefix(&p, &home()), InstallMethod::Cargo);
     }
 
     #[test]
     fn classifies_usr_local_bin_as_tarball() {
-        let p = PathBuf::from("/usr/local/bin/aoe");
+        let p = PathBuf::from("/usr/local/bin/aoe2");
         assert_eq!(
             classify_path_prefix(&p, &home()),
             InstallMethod::Tarball { binary_path: p }
@@ -606,7 +608,7 @@ mod tests {
 
     #[test]
     fn classifies_local_bin_as_tarball() {
-        let p = home().join(".local/bin/aoe");
+        let p = home().join(".local/bin/aoe2");
         assert_eq!(
             classify_path_prefix(&p, &home()),
             InstallMethod::Tarball {
@@ -617,7 +619,7 @@ mod tests {
 
     #[test]
     fn classifies_home_bin_as_tarball() {
-        let p = home().join("bin/aoe");
+        let p = home().join("bin/aoe2");
         assert_eq!(
             classify_path_prefix(&p, &home()),
             InstallMethod::Tarball {
@@ -628,7 +630,7 @@ mod tests {
 
     #[test]
     fn classifies_random_path_as_unknown() {
-        let p = PathBuf::from("/opt/aoe-custom/bin/aoe");
+        let p = PathBuf::from("/opt/aoe2-custom/bin/aoe2");
         assert_eq!(
             classify_path_prefix(&p, &home()),
             InstallMethod::Unknown { binary_path: p }
@@ -638,7 +640,7 @@ mod tests {
     /// Regression: on macOS `/tmp` is a symlink to `/private/tmp`. If the
     /// caller passes a canonicalized exe (`/private/tmp/...`) but a
     /// non-canonicalized home (`/tmp/...`), the parent-prefix comparison
-    /// fails and a perfectly fine tarball install at `~/.local/bin/aoe`
+    /// fails and a perfectly fine tarball install at `~/.local/bin/aoe2`
     /// looks like Unknown.
     ///
     /// This test exercises classify_path_prefix specifically — the caller
@@ -648,7 +650,7 @@ mod tests {
     fn classifier_requires_consistent_canonicalization() {
         let raw_home = PathBuf::from("/tmp/test-home");
         let canon_home = PathBuf::from("/private/tmp/test-home");
-        let canonicalized_exe = canon_home.join(".local/bin/aoe");
+        let canonicalized_exe = canon_home.join(".local/bin/aoe2");
 
         // With raw home + canonicalized exe → misclassifies as Unknown.
         assert!(matches!(
@@ -666,7 +668,7 @@ mod tests {
     }
 
     /// Real-filesystem regression test: build a symlinked HOME on disk,
-    /// place an aoe binary at $HOME/.local/bin/aoe through the symlink,
+    /// place an aoe2 binary at $HOME/.local/bin/aoe2 through the symlink,
     /// and verify detect_install_method (which does its own canonicalize)
     /// still classifies it as Tarball, not Unknown.
     ///
@@ -679,7 +681,7 @@ mod tests {
         let real_dir = TempDir::new().unwrap();
         let bin_dir = real_dir.path().join(".local").join("bin");
         std::fs::create_dir_all(&bin_dir).unwrap();
-        let exe = bin_dir.join("aoe");
+        let exe = bin_dir.join("aoe2");
         std::fs::write(&exe, b"#!/bin/sh\nexit 0\n").unwrap();
         #[cfg(unix)]
         std::fs::set_permissions(&exe, std::fs::Permissions::from_mode(0o755)).unwrap();
@@ -711,7 +713,7 @@ mod tests {
     #[test]
     fn brew_takes_priority_when_paths_match() {
         // brew probe returned a path that canonicalizes to the running binary
-        let exe = PathBuf::from("/opt/homebrew/Cellar/aoe/0.4.5/bin/aoe");
+        let exe = PathBuf::from("/opt/homebrew/Cellar/aoe2/0.4.5/bin/aoe2");
         let brew_path = Some(exe.clone());
         let prefix_class = InstallMethod::Unknown {
             binary_path: exe.clone(),
@@ -724,8 +726,8 @@ mod tests {
     fn brew_ignored_when_paths_differ() {
         // brew is installed (probe returned a path) but the running binary
         // is somewhere else - keep the prefix classification
-        let exe = PathBuf::from("/usr/local/bin/aoe");
-        let brew_path = Some(PathBuf::from("/opt/homebrew/Cellar/aoe/0.4.5/bin/aoe"));
+        let exe = PathBuf::from("/usr/local/bin/aoe2");
+        let brew_path = Some(PathBuf::from("/opt/homebrew/Cellar/aoe2/0.4.5/bin/aoe2"));
         let prefix_class = InstallMethod::Tarball {
             binary_path: exe.clone(),
         };
@@ -735,7 +737,7 @@ mod tests {
 
     #[test]
     fn brew_ignored_when_probe_returned_none() {
-        let exe = PathBuf::from("/usr/local/bin/aoe");
+        let exe = PathBuf::from("/usr/local/bin/aoe2");
         let prefix_class = InstallMethod::Tarball {
             binary_path: exe.clone(),
         };
@@ -793,7 +795,7 @@ mod tests {
         let url = release_tarball_url("0.5.0", "linux-amd64");
         assert_eq!(
             url,
-            "https://github.com/agent-of-empires/agent-of-empires/releases/download/v0.5.0/aoe-linux-amd64.tar.gz"
+            "https://github.com/maramizo/agent-of-empires-2/releases/download/v0.5.0/aoe2-linux-amd64.tar.gz"
         );
     }
 
@@ -809,7 +811,7 @@ mod tests {
         let url = release_tarball_url("0.5.0", "linux-amd64");
         assert_eq!(
             url,
-            "http://127.0.0.1:9999/releases/v0.5.0/aoe-linux-amd64.tar.gz"
+            "http://127.0.0.1:9999/releases/v0.5.0/aoe2-linux-amd64.tar.gz"
         );
         unsafe {
             match prev {
@@ -822,19 +824,19 @@ mod tests {
     #[test]
     fn prompt_block_tarball_no_sudo() {
         let m = InstallMethod::Tarball {
-            binary_path: PathBuf::from("/home/u/.local/bin/aoe"),
+            binary_path: PathBuf::from("/home/u/.local/bin/aoe2"),
         };
         let s = format_prompt_block("0.4.5", "0.5.0", &m, false);
         assert!(s.contains("Update v0.4.5 → v0.5.0"));
         assert!(s.contains("Method:    tarball install"));
-        assert!(s.contains("Location:  /home/u/.local/bin/aoe"));
+        assert!(s.contains("Location:  /home/u/.local/bin/aoe2"));
         assert!(!s.contains("Sudo:"));
     }
 
     #[test]
     fn prompt_block_tarball_sudo_required() {
         let m = InstallMethod::Tarball {
-            binary_path: PathBuf::from("/usr/local/bin/aoe"),
+            binary_path: PathBuf::from("/usr/local/bin/aoe2"),
         };
         let s = format_prompt_block("0.4.5", "0.5.0", &m, true);
         assert!(s.contains("Sudo:      required (write-protected directory)"));
@@ -855,7 +857,7 @@ mod tests {
 
     #[test]
     fn nix_refusal_message_contains_nix_run() {
-        assert!(nix_refusal_message().contains("nix run github:agent-of-empires/agent-of-empires"));
+        assert!(nix_refusal_message().contains("nix run github:maramizo/agent-of-empires-2"));
     }
 
     #[test]
@@ -865,9 +867,9 @@ mod tests {
 
     #[test]
     fn unknown_refusal_message_contains_install_script_url() {
-        let s = unknown_refusal_message(Path::new("/opt/weird/aoe"));
+        let s = unknown_refusal_message(Path::new("/opt/weird/aoe2"));
         assert!(s.contains("install.sh"));
-        assert!(s.contains("/opt/weird/aoe"));
+        assert!(s.contains("/opt/weird/aoe2"));
     }
 
     /// Tests for `sudo_replace` using a PATH-shimmed `sudo` that just
@@ -999,7 +1001,7 @@ mod tests {
         use std::os::unix::fs::PermissionsExt;
         use tempfile::TempDir;
 
-        /// Brew shim that handles `info aoe --json=v2` (emits the supplied
+        /// Brew shim that handles `info aoe2 --json=v2` (emits the supplied
         /// stable version as a v1-style top-level array) and records every
         /// invocation. `fail_on` lets a test simulate a brew subcommand
         /// failing (matched on the first arg).
@@ -1056,8 +1058,8 @@ mod tests {
             let lines: Vec<_> = invocations.lines().collect();
             assert_eq!(lines.len(), 3, "expected 3 brew calls; got {invocations:?}");
             assert_eq!(lines[0], "update");
-            assert_eq!(lines[1], "info aoe --json=v2");
-            assert_eq!(lines[2], "upgrade aoe");
+            assert_eq!(lines[1], "info aoe2 --json=v2");
+            assert_eq!(lines[2], "upgrade aoe2");
         }
 
         #[test]
@@ -1091,8 +1093,8 @@ mod tests {
             let err = with_path_prepended_returning(dir.path(), || update_via_brew("1.5.2"));
             let err = err.expect_err("brew upgrade failure should propagate");
             assert!(
-                err.to_string().contains("brew upgrade aoe"),
-                "expected `brew upgrade aoe` failure message; got: {err}"
+                err.to_string().contains("brew upgrade aoe2"),
+                "expected `brew upgrade aoe2` failure message; got: {err}"
             );
 
             let invocations = std::fs::read_to_string(&log).unwrap();
@@ -1102,7 +1104,7 @@ mod tests {
 
         /// Regression for #913: when the GitHub release is newer than the
         /// version Homebrew's formula advertises, `update_via_brew` must
-        /// bail loudly. Without the pre-check, `brew upgrade aoe` exits 0
+        /// bail loudly. Without the pre-check, `brew upgrade aoe2` exits 0
         /// and leaves the user on the old binary while the TUI keeps
         /// nagging about an available update.
         #[test]
@@ -1124,14 +1126,14 @@ mod tests {
             let lines: Vec<_> = invocations.lines().collect();
             assert_eq!(
                 lines,
-                vec!["update", "info aoe --json=v2"],
+                vec!["update", "info aoe2 --json=v2"],
                 "upgrade should not run when brew is behind"
             );
         }
 
         /// If `brew info` returns no parseable data (older brew, network
         /// blip, formula not tapped yet), fall back to the legacy
-        /// behavior of just running `brew upgrade aoe`. Better to attempt
+        /// behavior of just running `brew upgrade aoe2`. Better to attempt
         /// the upgrade than to block users on a parsing edge case.
         #[test]
         #[serial]
@@ -1152,7 +1154,7 @@ mod tests {
             let invocations = std::fs::read_to_string(&log).unwrap();
             let lines: Vec<_> = invocations.lines().collect();
             assert_eq!(lines.len(), 3, "upgrade should still run; got {lines:?}");
-            assert_eq!(lines[2], "upgrade aoe");
+            assert_eq!(lines[2], "upgrade aoe2");
         }
 
         // PATH-prepended runner that returns a value (Result, in this case).

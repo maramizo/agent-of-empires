@@ -83,3 +83,7 @@ website/src/pages/docs/development/internals/*.md
 web/coverage/
 web/playwright-report/
 web/playwright-live-report/
+
+# Python monitor SDK bytecode
+__pycache__/
+*.pyc

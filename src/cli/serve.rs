@@ -727,7 +727,7 @@ fn command_is_aoe_serve(command: &[u8]) -> bool {
         .rsplit(|byte| *byte == b'/')
         .next()
         .unwrap_or(executable);
-    if !matches!(basename, b"aoe" | b"agent-of-empires") {
+    if !matches!(basename, b"aoe2" | b"aoe" | b"agent-of-empires") {
         return false;
     }
 
@@ -797,7 +797,8 @@ fn inspect_daemon_process(pid: i32) -> DaemonProcessIdentity {
 /// A trailing space is required so a mention in an unrelated argument
 /// (`vim src/aoe.rs`) still classifies as foreign.
 fn command_mentions_aoe_executable(command: &[u8]) -> bool {
-    command.windows(4).any(|window| window == b"aoe ")
+    command.windows(5).any(|window| window == b"aoe2 ")
+        || command.windows(4).any(|window| window == b"aoe ")
         || command
             .windows(17)
             .any(|window| window == b"agent-of-empires ")
@@ -1669,6 +1670,10 @@ mod tests {
     #[test]
     fn daemon_command_requires_exact_executable_and_serve_subcommand() {
         let cases: &[(&[u8], bool)] = &[
+            (b"/home/user/.local/bin/aoe2\0serve\0--daemon\0", true),
+            (b"aoe2 --profile work serve --daemon", true),
+            (b"aoe2 update", false),
+            (b"aoe2-helper serve", false),
             (b"/usr/local/bin/aoe\0serve\0--daemon\0", true),
             (b"agent-of-empires serve --daemon", true),
             (b"aoe --profile work serve --daemon", true),

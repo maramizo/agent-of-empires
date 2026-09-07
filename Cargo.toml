@@ -2,14 +2,14 @@
 members = [".", "xtask", "aoe-settings-derive", "aoe-plugin-api"]
 
 [package]
-name = "agent-of-empires"
-version = "1.15.3"
+name = "agent-of-empires-2"
+version = "2.0.0"
 edition = "2021"
 rust-version = "1.85"
 authors = ["Agent of Empires Contributors"]
 description = "Terminal session manager for AI coding agents"
 license = "MIT"
-repository = "https://github.com/agent-of-empires/agent-of-empires"
+repository = "https://github.com/maramizo/agent-of-empires-2"
 keywords = ["tmux", "tui", "ai", "claude", "terminal"]
 categories = ["command-line-utilities", "development-tools"]
 
@@ -253,7 +253,7 @@ tower = { version = "0.5", features = ["util"] }
 # (and release binaries) never see the feature. `default-features = false`
 # matters: without it this entry re-enables the default features under
 # `cargo test --no-default-features`, making that CI job meaningless.
-agent-of-empires = { path = ".", default-features = false, features = ["test-support"] }
+agent-of-empires = { package = "agent-of-empires-2", path = ".", default-features = false, features = ["test-support"] }
 
 [profile.dev]
 # Full DWARF is cargo's `dev` default and it dominates `target/`: this table and
@@ -293,6 +293,9 @@ name = "e2e"
 path = "tests/e2e/main.rs"
 required-features = ["e2e-tests"]
 
+[lib]
+name = "agent_of_empires"
+
 [[bin]]
-name = "aoe"
+name = "aoe2"
 path = "src/main.rs"

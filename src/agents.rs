@@ -964,7 +964,7 @@ pub const AGENTS: &[AgentDef] = &[
         session_support: session_support(
             ResumeStrategy::Subcommand("resume"),
             SessionCaptureBackend::Codex,
-            SessionCaptureContext::Unsupported,
+            SessionCaptureContext::PaneScoped,
             SessionCaptureContext::ManagedExclusiveStore,
         ),
         fork_strategy: ForkStrategy::CodexFork,
@@ -2771,7 +2771,7 @@ mod tests {
                 "codex",
                 Some((
                     Backend::Codex,
-                    Context::Unsupported,
+                    Context::PaneScoped,
                     Context::ManagedExclusiveStore,
                 )),
             ),

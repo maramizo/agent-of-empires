@@ -11,7 +11,7 @@ pub(super) fn status_hook_env_prefix(
     let has_hooks = agent.is_some_and(|a| a.hook_config.is_some() || a.sidecar_hooks.is_some());
 
     if has_hooks {
-        let hook_bin = std::env::current_exe()
+        let hook_bin = crate::process::current_exe_for_spawn()
             .expect("current executable is required for host identity hooks");
         format!(
             "AOE_PROFILE={} AOE_INSTANCE_ID={} AOE_HOOK_BIN={} ",

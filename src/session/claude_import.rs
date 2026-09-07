@@ -150,6 +150,17 @@ pub fn scan_sessions() -> Vec<ClaudeSessionSummary> {
 /// config tree without mutating the global `CLAUDE_CONFIG_DIR` env (which would
 /// race the parallel test runner). See [`scan_sessions`] for filtering rules.
 pub fn scan_sessions_in(config_dir: &Path) -> Vec<ClaudeSessionSummary> {
+    scan_sessions_in_filtered(config_dir, true)
+}
+
+pub(crate) fn scan_sessions_for_onboarding(config_dir: &Path) -> Vec<ClaudeSessionSummary> {
+    scan_sessions_in_filtered(config_dir, false)
+}
+
+fn scan_sessions_in_filtered(
+    config_dir: &Path,
+    exclude_managed_paths: bool,
+) -> Vec<ClaudeSessionSummary> {
     let projects = config_dir.join("projects");
     let Ok(project_dirs) = fs::read_dir(&projects) else {
         return Vec::new();
@@ -174,14 +185,14 @@ pub fn scan_sessions_in(config_dir: &Path) -> Vec<ClaudeSessionSummary> {
                 // Scratch sessions live under `<app_dir>/scratch/<id>`. Match by
                 // layout so both release and -dev namespaces are excluded the
                 // same way (the feature does not discriminate between them).
-                if cwd_is_aoe_scratch(&summary.cwd) {
+                if exclude_managed_paths && cwd_is_aoe_scratch(&summary.cwd) {
                     continue;
                 }
                 // AoE creates session worktrees under a directory named by the
                 // worktree path template (e.g. "<repo>-worktrees"). Any cwd
                 // inside one is an AoE-managed worktree (or a one-shot AoE ran
                 // there, like smart-rename), not a conversation to import.
-                if cwd_under_worktree(&summary.cwd, &worktree_markers) {
+                if exclude_managed_paths && cwd_under_worktree(&summary.cwd, &worktree_markers) {
                     continue;
                 }
                 out.push(summary);

@@ -1,5 +1,7 @@
 //! `agent-of-empires session` subcommands implementation
 
+mod onboard;
+
 use anyhow::{bail, Context, Result};
 use clap::{Args, Subcommand};
 use serde::Serialize;
@@ -101,6 +103,10 @@ pub enum SessionCommands {
     /// conversation with `claude --resume <id>` (default), or a
     /// structured-view session with `--structured`.
     Import(ImportArgs),
+
+    /// Add an existing external Codex or Claude conversation, preserving its history.
+    #[command(visible_alias = "adopt")]
+    Onboard(onboard::OnboardArgs),
 
     /// List the sessions currently in the trash.
     ListTrash,
@@ -407,6 +413,7 @@ pub async fn run(profile: &str, command: SessionCommands) -> Result<()> {
         SessionCommands::Unarchive(args) => unarchive_session(profile, args).await,
         SessionCommands::Restore(args) => restore_session(profile, args).await,
         SessionCommands::Import(args) => import_sessions(profile, args).await,
+        SessionCommands::Onboard(args) => onboard::run(profile, args).await,
         SessionCommands::ListTrash => list_trash(profile).await,
         SessionCommands::EmptyTrash => empty_trash(profile).await,
     }
@@ -1403,7 +1410,6 @@ async fn restart_session(profile: &str, args: SessionIdArgs) -> Result<()> {
     )?;
     let title = working.title.clone();
     let session_id = working.id.clone();
-    let tool = working.tool.clone();
 
     // Resolve the configured wake message (global default with per-profile
     // override). Empty string is the documented opt-out: the restart still
@@ -1414,27 +1420,9 @@ async fn restart_session(profile: &str, args: SessionIdArgs) -> Result<()> {
 
     let mut wake_succeeded = false;
     if !wake_msg.is_empty() && !matches!(outcome, StartOutcome::ResumeFailed { .. }) {
-        // Restart re-execs the agent at a blank prompt; nudge it back into
-        // its prior task. Wait for a real readiness signal when one is
-        // known for this agent, falling back to steady-state pane output
-        // otherwise, so the keys land as soon as the agent is at a prompt
-        // and don't get stranded mid-banner on slow machines.
-        let tmux_session = crate::tmux::Session::new(&session_id, &title)?;
-        tmux_session.wait_until_ready(
-            std::time::Duration::from_secs(5),
-            crate::agents::ready_marker(&tool),
-        );
-
-        if tmux_session.exists() {
-            let delay = crate::agents::send_keys_enter_delay(&tool);
-            match tmux_session.send_keys_with_delay(&wake_msg, delay) {
-                Ok(()) => {
-                    wake_succeeded = true;
-                }
-                Err(e) => {
-                    eprintln!("Warning: failed to send wake-up message: {}", e);
-                }
-            }
+        match working.send_prompt(&wake_msg) {
+            Ok(_) => wake_succeeded = true,
+            Err(error) => eprintln!("Warning: failed to deliver wake-up message: {error}"),
         }
     }
 

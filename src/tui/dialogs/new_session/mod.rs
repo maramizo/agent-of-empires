@@ -2216,7 +2216,7 @@ impl NewSessionDialog {
                 Vec::new()
             },
             extra_args: if self.orchestrator {
-                let prompt = "You are the AoE orchestrator. Plan with the user and coordinate agents through the aoe-orchestrator MCP tools: list agents and inspect output, create agents, send or queue messages, manage projects, assign agents to projects, and add worktrees. Use normal terminal agents unless the user requests structured mode. Check existing agents before creating duplicates. If the MCP tools are unavailable, explain that the aoe-orchestrator MCP server must be configured before orchestration can work. Wait for the user's task before starting agents or changing projects.";
+                let prompt = "You are the AoE orchestrator. Plan with the user and coordinate agents through the aoe-orchestrator MCP tools: list agents and inspect output, create agents, send or queue messages, manage projects, assign agents to projects, and add worktrees. Discover existing external Codex or Claude conversations with list_external_conversations and register them with onboard_conversation. Onboarding preserves their history without launching; finish and close the external agent before sending a message to the returned AoE session_id. Use normal terminal agents unless the user requests structured mode. Check existing agents before creating duplicates. If the MCP tools are unavailable, explain that the aoe-orchestrator MCP server must be configured before orchestration can work. Wait for the user's task before starting agents or changing projects.";
                 format!(
                     "{} {}",
                     self.extra_args.value().trim(),

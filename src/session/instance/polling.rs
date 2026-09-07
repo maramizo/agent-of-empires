@@ -252,6 +252,12 @@ impl Instance {
                 let sidecar_id = self.id.clone();
                 Box::new(move || crate::hooks::read_hook_session_id(&sidecar_id))
             }
+            crate::agents::SessionCaptureBackend::Codex
+                if context == crate::agents::SessionCaptureContext::PaneScoped =>
+            {
+                let sidecar_id = self.id.clone();
+                Box::new(move || crate::hooks::read_hook_session_id(&sidecar_id))
+            }
             crate::agents::SessionCaptureBackend::Codex => {
                 let Some(store) = self.sandbox_capture_store_dir() else {
                     return;

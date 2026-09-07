@@ -300,7 +300,8 @@ impl Instance {
             backend,
             crate::agents::SessionCaptureBackend::Claude
                 | crate::agents::SessionCaptureBackend::HookSidecar
-        ) {
+        ) || (backend == crate::agents::SessionCaptureBackend::Codex && !self.is_sandboxed())
+        {
             let authoritative = crate::hooks::read_hook_session_id_any_age(&self.id)?;
             if self.retroactive_capture_excludes.contains(&authoritative) {
                 return None;
@@ -524,6 +525,9 @@ impl Instance {
                 crate::agents::SessionCaptureBackend::Claude
                 | crate::agents::SessionCaptureBackend::HookSidecar,
             ) => {
+                let _ = crate::hooks::unlink_session_id_via_guard(&self.id);
+            }
+            Some(crate::agents::SessionCaptureBackend::Codex) if !self.is_sandboxed() => {
                 let _ = crate::hooks::unlink_session_id_via_guard(&self.id);
             }
             Some(crate::agents::SessionCaptureBackend::Pi) => match self.pi_sidecar_source() {
@@ -1889,16 +1893,49 @@ pi = "~/.pi-personal"
         assert!(inst.apply_session_flags(&mut cmd2, "test").unwrap());
     }
     #[test]
+    #[serial(hook_base)]
+    fn codex_host_resumes_published_identity_and_tracks_rotation() {
+        let (_guard, _base, _temp) = crate::hooks::test_support::BaseGuard::ready();
+        let mut inst = Instance::new("codex-history", "/tmp/codex-history");
+        inst.tool = "codex".to_string();
+        inst.command = "codex".to_string();
+        let first = "11111111-1111-4111-8111-111111111111";
+        let second = "22222222-2222-4222-8222-222222222222";
+
+        assert!(inst.supports_native_resume());
+        assert!(inst.supports_session_poller());
+        crate::hooks::write_session_id_via_guard(&inst.id, first).unwrap();
+        assert_eq!(inst.try_retroactive_capture().as_deref(), Some(first));
+        inst.agent_session_id = Some(first.to_string());
+        let mut command = "codex".to_string();
+        assert!(inst.apply_session_flags(&mut command, "test").unwrap());
+        assert_eq!(command, format!("codex resume {first}"));
+
+        crate::hooks::write_session_id_via_guard(&inst.id, second).unwrap();
+        let mut command = "codex".to_string();
+        assert!(inst.apply_session_flags(&mut command, "test").unwrap());
+        assert_eq!(command, format!("codex resume {second}"));
+        assert_eq!(inst.agent_session_id.as_deref(), Some(second));
+
+        inst.clear_pane_identity_sidecar();
+        assert!(crate::hooks::read_hook_session_id_any_age(&inst.id).is_none());
+        assert_eq!(
+            inst.acquire_session_id_with(&|_| None),
+            (Some(second.to_string()), true)
+        );
+    }
+
+    #[test]
     fn unsupported_context_without_identity_neither_resumes_nor_polls() {
         let mut inst = Instance::new("unsupported", "/tmp/test");
-        inst.tool = "codex".to_string();
+        inst.tool = "gemini".to_string();
 
         assert_eq!(inst.acquire_session_id_with(&|_| None), (None, false));
         assert_eq!(inst.agent_session_id, None);
 
-        let mut cmd = String::from("codex");
+        let mut cmd = String::from("gemini");
         assert!(!inst.apply_session_flags(&mut cmd, "test").unwrap());
-        assert_eq!(cmd, "codex");
+        assert_eq!(cmd, "gemini");
 
         inst.capture_started_at = Some(std::time::SystemTime::now());
         inst.maybe_start_poller_since(None);

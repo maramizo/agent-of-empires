@@ -33,7 +33,7 @@ export default async function globalSetup(): Promise<void> {
     return;
   }
 
-  const fallback = join(repoRoot, "target", "debug", "aoe");
+  const fallback = join(repoRoot, "target", "debug", "aoe2");
   if (existsSync(fallback)) {
     process.stdout.write(`[liveGlobalSetup] using ${fallback}\n`);
     return;

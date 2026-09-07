@@ -69,10 +69,12 @@ pub struct CreateSessionBody {
     pub view: crate::session::View,
     #[serde(default)]
     pub agent_name: Option<String>,
-    #[serde(default)]
+    #[serde(default, alias = "model")]
     pub agent_model: Option<String>,
-    #[serde(default)]
+    #[serde(default, alias = "effort")]
     pub agent_effort: Option<String>,
+    #[serde(default)]
+    pub fast_mode: Option<bool>,
     /// Scratch session: server provisions a fresh directory under
     /// `<app_dir>/scratch/<id>/` and ignores `path`. Mutually exclusive with
     /// `worktree_branch` and `extra_repo_paths`; the handler returns 400
@@ -634,6 +636,25 @@ pub async fn create_session(
         Err(rej) => return rej.into_response(),
     };
 
+    let launch = crate::session::launch_options::LaunchOptions {
+        model: body.agent_model.clone(),
+        effort: body.agent_effort.clone(),
+        fast_mode: body.fast_mode,
+    };
+    if let Err(error) = launch.validate(
+        &body.tool,
+        body.view == crate::session::View::Structured,
+        !body.command_override.is_empty(),
+    ) {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(
+                serde_json::json!({"error":"invalid_launch_options", "message":error.to_string()}),
+            ),
+        )
+            .into_response();
+    }
+
     if !state.cityhall_mode {
         if let Some(projects) = body.projects.take() {
             if projects.is_empty()
@@ -1118,6 +1139,7 @@ pub async fn create_session(
         agent_name: body.agent_name,
         agent_model: body.agent_model,
         agent_effort: body.agent_effort,
+        fast_mode: body.fast_mode,
         import_acp_session_id: body.import_acp_session_id,
         fork_seed,
     };

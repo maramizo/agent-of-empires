@@ -1,10 +1,10 @@
 #!/bin/bash
 #
 # GitHub Release Download Metrics Report
-# Analyzes download statistics for agent-of-empires/agent-of-empires releases
+# Analyzes download statistics for maramizo/agent-of-empires-2 releases
 #
 
-REPO="agent-of-empires/agent-of-empires"
+REPO="maramizo/agent-of-empires-2"
 API_URL="https://api.github.com/repos/${REPO}/releases"
 
 echo "Fetching release data from GitHub..."

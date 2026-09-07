@@ -1,29 +1,29 @@
 ---
-// Compact install widget: toggle between Homebrew and the install script, with a
+// Compact install widget: toggle between a source build and the install script, with a
 // copy button for whichever command is active. Reuses copyCommand() from main.js.
 interface Props {
   class?: string;
 }
 const { class: className = '' } = Astro.props;
 
-const brew = 'brew install aoe';
+const brew = 'cargo install --git https://github.com/maramizo/agent-of-empires-2 agent-of-empires-2';
 const curl =
-  'curl -fsSL https://raw.githubusercontent.com/agent-of-empires/agent-of-empires/main/scripts/install.sh | bash';
+  'curl -fsSL https://raw.githubusercontent.com/maramizo/agent-of-empires-2/main/scripts/install.sh | bash';
 ---
 
 <div
   class:list={['install-group flex flex-col items-start gap-2 w-full max-w-md', className]}
   data-brew={brew}
   data-curl={curl}
-  data-active="brew"
+  data-active="curl"
 >
   <div class="demo-toggle inline-flex gap-0.5 rounded-lg p-0.5 font-mono text-xs w-fit" role="group" aria-label="Install method">
-    <button class="demo-tab demo-tab-active rounded-md px-3 py-1" data-install="brew" aria-pressed="true" onclick="switchInstall(this, 'brew')">Homebrew</button>
-    <button class="demo-tab rounded-md px-3 py-1" data-install="curl" aria-pressed="false" onclick="switchInstall(this, 'curl')">Install script</button>
+    <button class="demo-tab rounded-md px-3 py-1" data-install="brew" aria-pressed="false" onclick="switchInstall(this, 'brew')">Build from source</button>
+    <button class="demo-tab demo-tab-active rounded-md px-3 py-1" data-install="curl" aria-pressed="true" onclick="switchInstall(this, 'curl')">Install script</button>
   </div>
   <div class="install-inline flex items-start gap-2 rounded-xl px-4 py-3 font-mono text-sm w-full">
     <code class="flex-1 min-w-0 break-all leading-relaxed text-gray-100">
-      <span data-install-view="brew"><span class="text-gray-500 select-none">$ </span><span class="text-brand-400">brew</span> install aoe</span><span data-install-view="curl" class="hidden"><span class="text-gray-500 select-none">$ </span><span class="text-brand-400">curl</span> -fsSL https://raw.githubusercontent.com/agent-of-empires/agent-of-empires/main/scripts/install.sh <span class="text-gray-500">|</span> bash</span>
+      <span data-install-view="brew" class="hidden"><span class="text-gray-500 select-none">$ </span>{brew}</span><span data-install-view="curl"><span class="text-gray-500 select-none">$ </span><span class="text-brand-400">curl</span> -fsSL https://raw.githubusercontent.com/maramizo/agent-of-empires-2/main/scripts/install.sh <span class="text-gray-500">|</span> bash</span>
     </code>
     <button
       onclick="copyInstall(this)"

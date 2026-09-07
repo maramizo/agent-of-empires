@@ -92,7 +92,7 @@ fn init_repo_isolated(repo: &Path, home: &Path, xdg: &Path) {
 }
 
 fn run_aoe(home: &Path, xdg: &Path, stub: &Path, args: &[&str]) -> std::process::Output {
-    Command::new(env!("CARGO_BIN_EXE_aoe"))
+    Command::new(env!("CARGO_BIN_EXE_aoe2"))
         .args(args)
         .env(
             "PATH",

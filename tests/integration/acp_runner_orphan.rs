@@ -62,7 +62,7 @@ fn spawn_runner_and_wait_for_record(home: &Path, xdg: &Path, session_id: &str) -
     let socket = workers.join(format!("{session_id}.sock"));
     let record = workers.join(format!("{session_id}.json"));
 
-    let bin = env!("CARGO_BIN_EXE_aoe");
+    let bin = env!("CARGO_BIN_EXE_aoe2");
     let mut child = Command::new(bin)
         .args([
             "__acp-runner",

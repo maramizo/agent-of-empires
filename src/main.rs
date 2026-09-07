@@ -57,6 +57,11 @@ fn serve_unavailable_error(cli: &Cli) -> Option<clap::Error> {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    let mut internal_args = std::env::args().skip(1);
+    if internal_args.next().as_deref() == Some("__codex-terminal") {
+        return agent_of_empires::session::codex_terminal::run(internal_args).await;
+    }
+
     // Hidden internal helper for the VT live-preview path (`[tmux] vt_live`,
     // default on): `aoe __vt-pipe <socket>` forwards a tmux pipe-pane stream to
     // a unix socket. Handled before clap so it never appears on the CLI/docs

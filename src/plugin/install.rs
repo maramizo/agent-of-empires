@@ -1732,13 +1732,11 @@ mod tests {
 
     #[test]
     fn reject_incompatible_host_blocks_out_of_range_and_allows_in_range() {
-        // The host is this crate's CARGO_PKG_VERSION (a 1.x release); a range
-        // bracketing 1.x installs, a future-major-only range is refused with an
-        // id-prefixed message.
-        let in_range = manifest_with_aoe_version(Some(">=1.0.0, <2.0.0"));
+        let host = semver::Version::parse(env!("CARGO_PKG_VERSION")).unwrap();
+        let in_range = manifest_with_aoe_version(Some(&format!("={host}")));
         assert!(reject_incompatible_host(&in_range).is_ok());
 
-        let out = manifest_with_aoe_version(Some(">=2.0.0"));
+        let out = manifest_with_aoe_version(Some(&format!(">={}.0.0", host.major + 1)));
         let err = reject_incompatible_host(&out).unwrap_err().to_string();
         assert!(err.contains("acme.thing"), "{err}");
         assert!(err.contains("plugin requires aoe"), "{err}");

@@ -56,7 +56,7 @@ jobs:
 
       - name: Update Cargo version
         run: |
-          cargo set-version --package agent-of-empires "$VERSION"
+          cargo set-version --package agent-of-empires-2 "$VERSION"
           # Refresh Cargo.lock so the [[package]] entry tracks the new version
           # without requiring a full build.
           cargo generate-lockfile --offline 2>/dev/null || cargo generate-lockfile

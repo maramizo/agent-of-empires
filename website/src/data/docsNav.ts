@@ -35,6 +35,7 @@ export const docsNav: NavSection[] = [
       { title: "tmux Status Bar", href: "/guides/tmux-status-bar/", description: "Show live session status in your tmux status bar." },
       { title: "Agent Command Overrides", href: "/guides/agent-override/", description: "Customize the command used to launch each agent." },
       { title: "Tool Sessions", href: "/guides/tool-sessions/", description: "Run plain shell or tool sessions alongside your agents." },
+      { title: "Python Monitors", href: "/guides/monitors/", description: "Schedule Python scripts and coordinate agents." },
       { title: "MCP Servers", href: "/guides/mcp-servers/", description: "Forward configured MCP servers to structured-view agents." },
       { title: "Session Resume (Claude)", href: "/guides/session-resume/", description: "Resume a previous Claude Code conversation in a session." },
       { title: "Forking Sessions", href: "/guides/session-fork/", description: "Branch a session's conversation into a new, independent session." },

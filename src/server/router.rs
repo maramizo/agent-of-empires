@@ -362,7 +362,23 @@ pub(super) fn build_router(state: Arc<AppState>) -> Router {
         )
         .route("/api/acp/agents", get(api::list_acp_agents))
         .route("/api/acp/option-catalog", get(api::get_option_catalog))
-        .route("/api/claude-sessions", get(api::list_claude_sessions));
+        .route("/api/claude-sessions", get(api::list_claude_sessions))
+        .route(
+            "/api/external-conversations",
+            get(api::list_external_conversations),
+        )
+        .route("/api/sessions/onboard", post(api::onboard_conversation))
+        .route(
+            "/api/monitors",
+            get(super::monitors::list).post(super::monitors::create),
+        )
+        .route(
+            "/api/monitors/{id}",
+            patch(super::monitors::update).delete(super::monitors::delete),
+        )
+        .route("/api/monitors/{id}/run", post(super::monitors::run_now))
+        .route("/api/monitors/{id}/runs", get(super::monitors::runs))
+        .route("/api/monitors/{id}/cancel", post(super::monitors::cancel));
 
     // Dashboard bundle (Vite build output) plus the SPA fallback. Without
     // `web` the daemon still answers `/api/*`; browser paths 404.

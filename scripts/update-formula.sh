@@ -8,13 +8,13 @@ if [ -z "$VERSION" ]; then
     exit 1
 fi
 
-REPO="agent-of-empires/agent-of-empires"
+REPO="maramizo/agent-of-empires-2"
 BASE_URL="https://github.com/${REPO}/releases/download/v${VERSION}"
 
 echo "Fetching sha256 hashes for v${VERSION}..."
 echo ""
 
-for ARTIFACT in aoe-darwin-arm64 aoe-darwin-amd64 aoe-linux-arm64 aoe-linux-amd64; do
+for ARTIFACT in aoe2-darwin-arm64 aoe2-darwin-amd64 aoe2-linux-arm64 aoe2-linux-amd64; do
     URL="${BASE_URL}/${ARTIFACT}.tar.gz"
     echo "Downloading ${ARTIFACT}..."
     SHA=$(curl -sL "${URL}" | shasum -a 256 | cut -d' ' -f1)
@@ -24,28 +24,28 @@ for ARTIFACT in aoe-darwin-arm64 aoe-darwin-amd64 aoe-linux-arm64 aoe-linux-amd6
 done
 
 echo ""
-echo "=== Update Formula/aoe.rb with these values ==="
+echo "=== Update Formula/aoe2.rb with these values ==="
 echo ""
 cat << EOF
   on_macos do
     on_arm do
-      url "https://github.com/${REPO}/releases/download/v${VERSION}/aoe-darwin-arm64.tar.gz"
-      sha256 "${SHA_aoe_darwin_arm64}"
+      url "https://github.com/${REPO}/releases/download/v${VERSION}/aoe2-darwin-arm64.tar.gz"
+      sha256 "${SHA_aoe2_darwin_arm64}"
     end
     on_intel do
-      url "https://github.com/${REPO}/releases/download/v${VERSION}/aoe-darwin-amd64.tar.gz"
-      sha256 "${SHA_aoe_darwin_amd64}"
+      url "https://github.com/${REPO}/releases/download/v${VERSION}/aoe2-darwin-amd64.tar.gz"
+      sha256 "${SHA_aoe2_darwin_amd64}"
     end
   end
 
   on_linux do
     on_arm do
-      url "https://github.com/${REPO}/releases/download/v${VERSION}/aoe-linux-arm64.tar.gz"
-      sha256 "${SHA_aoe_linux_arm64}"
+      url "https://github.com/${REPO}/releases/download/v${VERSION}/aoe2-linux-arm64.tar.gz"
+      sha256 "${SHA_aoe2_linux_arm64}"
     end
     on_intel do
-      url "https://github.com/${REPO}/releases/download/v${VERSION}/aoe-linux-amd64.tar.gz"
-      sha256 "${SHA_aoe_linux_amd64}"
+      url "https://github.com/${REPO}/releases/download/v${VERSION}/aoe2-linux-amd64.tar.gz"
+      sha256 "${SHA_aoe2_linux_amd64}"
     end
   end
 EOF

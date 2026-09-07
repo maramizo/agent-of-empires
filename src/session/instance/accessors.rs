@@ -69,6 +69,7 @@ impl Instance {
             view: View::Terminal,
             agent_name: None,
             agent_model: None,
+            terminal_launch: Default::default(),
             acp_effort: None,
             acp_session_id: None,
             import_pending: None,
@@ -175,7 +176,7 @@ impl Instance {
     /// and let [`tmux::status_rules::effective_detect_as`] consult the live
     /// registry when it is empty, the same way the pane detector, hook
     /// reconciliation, and the status-change log line already do (#3398).
-    pub(super) fn effective_detect_as(&self) -> std::borrow::Cow<'_, str> {
+    pub(crate) fn effective_detect_as(&self) -> std::borrow::Cow<'_, str> {
         tmux::status_rules::effective_detect_as(&self.source_profile, &self.tool, &self.detect_as)
     }
 
@@ -326,9 +327,9 @@ impl Instance {
     /// This is evidence for the identity publisher only. It does not change
     /// native resume support.
     pub(crate) fn hook_session_publisher_allowed_by_argv(&self) -> bool {
-        if !self
+        if self
             .resolved_agent()
-            .is_some_and(|agent| agent.name == "claude")
+            .is_none_or(|agent| agent.name != "claude")
         {
             return true;
         }

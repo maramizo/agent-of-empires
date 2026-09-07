@@ -48,6 +48,7 @@
                 (craneLib.fileset.commonCargoSources ./.)
                 ./acp-worker/adapters
                 ./acp-worker/aoe-agent/package.json
+                ./monitor-sdk
                 ./assets
                 ./docker
               ];
@@ -61,13 +62,13 @@
 
           aoe = craneLib.buildPackage (commonArgs // {
             inherit cargoArtifacts;
-            cargoExtraArgs = "--package agent-of-empires";
+            cargoExtraArgs = "--package agent-of-empires-2";
             doCheck = false;
             postInstall = ''
-              installShellCompletion --cmd aoe \
-                --bash <($out/bin/aoe completion bash) \
-                --fish <($out/bin/aoe completion fish) \
-                --zsh <($out/bin/aoe completion zsh)
+              installShellCompletion --cmd aoe2 \
+                --bash <($out/bin/aoe2 completion bash) \
+                --fish <($out/bin/aoe2 completion fish) \
+                --zsh <($out/bin/aoe2 completion zsh)
             '';
 
             meta = with pkgs.lib; {
@@ -80,10 +81,10 @@
 
                 Supports Claude Code, OpenCode, Mistral Vibe, Codex CLI, and Gemini CLI.
               '';
-              homepage = "https://github.com/agent-of-empires/agent-of-empires";
+              homepage = "https://github.com/maramizo/agent-of-empires-2";
               license = licenses.mit;
               platforms = platforms.unix;
-              mainProgram = "aoe";
+              mainProgram = "aoe2";
             };
           });
 
@@ -109,7 +110,7 @@
           # build.rs respects AOE_WEB_DIST to use the pre-built frontend.
           # buildDepsOnly uses a dummy crate source so AOE_WEB_DIST is irrelevant there.
           commonArgsWithWeb = commonArgs // {
-            cargoExtraArgs = "--package agent-of-empires --features web";
+            cargoExtraArgs = "--package agent-of-empires-2 --features web";
           };
 
           # Rust dep cache compiled with --features web (no npm involved).
@@ -122,10 +123,10 @@
             # place and skip running npm entirely (see build.rs AOE_WEB_DIST handling).
             AOE_WEB_DIST = "${webFrontend}/dist";
             postInstall = ''
-              installShellCompletion --cmd aoe \
-                --bash <($out/bin/aoe completion bash) \
-                --fish <($out/bin/aoe completion fish) \
-                --zsh <($out/bin/aoe completion zsh)
+              installShellCompletion --cmd aoe2 \
+                --bash <($out/bin/aoe2 completion bash) \
+                --fish <($out/bin/aoe2 completion fish) \
+                --zsh <($out/bin/aoe2 completion zsh)
             '';
             meta = aoe.meta;
             # Expose npmDeps so `nix-update` can automatically recompute the
@@ -155,7 +156,7 @@
               # e2e-tests keeps the gated e2e target inside the --all-targets
               # sweep; without it the required-features gate would silently drop
               # e2e from clippy's --deny warnings coverage.
-              cargoClippyExtraArgs = "--package agent-of-empires --all-targets --features e2e-tests -- --deny warnings";
+              cargoClippyExtraArgs = "--package agent-of-empires-2 --all-targets --features e2e-tests -- --deny warnings";
             });
 
             aoe-fmt = craneLib.cargoFmt {
@@ -164,9 +165,9 @@
 
             aoe-test = craneLib.cargoTest (commonArgs // {
               inherit cargoArtifacts;
-              cargoTestExtraArgs = "--package agent-of-empires";
+              cargoTestExtraArgs = "--package agent-of-empires-2";
               # Some git:: unit tests invoke the git binary directly
-              nativeBuildInputs = commonArgs.nativeBuildInputs ++ [ pkgs.git ];
+              nativeBuildInputs = commonArgs.nativeBuildInputs ++ [ pkgs.git pkgs.python3 ];
             });
           };
 

@@ -301,9 +301,9 @@ export function resolveAoeBinary(): string {
   if (fromEnv && existsSync(fromEnv)) return fromEnv;
   const repoRoot = resolve(__dirname, "..", "..", "..");
   // Live tests require debug-only timing overrides. CI also supplies a debug binary.
-  const debug = join(repoRoot, "target", "debug", "aoe");
+  const debug = join(repoRoot, "target", "debug", "aoe2");
   if (existsSync(debug)) return debug;
-  return join(repoRoot, "target", "release", "aoe");
+  return join(repoRoot, "target", "release", "aoe2");
 }
 
 /**

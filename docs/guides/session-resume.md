@@ -1,6 +1,6 @@
 # Native Session Resume
 
-AoE terminal sessions resume the same native agent conversation after a reboot, an `aoe` upgrade, or a tmux server restart when the agent exposes an authoritative identity source. AoE records only identities attributable to that pane or to its physically isolated sandbox store. An ambiguous shared-store match is ignored rather than guessed.
+AoE terminal sessions resume the same native agent conversation after a reboot, an `aoe2` upgrade, or a tmux server restart when the agent exposes an authoritative identity source. AoE records only identities attributable to that pane or to its physically isolated sandbox store. An ambiguous shared-store match is ignored rather than guessed.
 
 Runtime conversation changes such as `/clear`, `/new`, fork, continue, or a fresh pane generation rotate the recorded identity when the upstream agent publishes the change. The old identity and any artifact predating the launch boundary cannot be recaptured after an AoE process restart.
 
@@ -11,7 +11,7 @@ Runtime conversation changes such as `/clear`, `/new`, fork, continue, or a fres
 | Claude Code | Yes | Yes | Pane-scoped native hook |
 | OpenCode | Opt-in | No | AoE-preassigned native ID |
 | Vibe | No | No | None verified |
-| Codex | No | Yes | Isolated managed store |
+| Codex | Yes | Yes | Native hook on host; isolated managed store in sandbox |
 | Gemini CLI | No | Yes | Isolated managed store |
 | Cursor Agent | Yes | Yes | `beforeSubmitPrompt` hook `conversation_id` |
 | Droid | No | No | None verified |
@@ -43,7 +43,7 @@ To branch a conversation into a new session instead of resuming it in place, see
 Pin a terminal session to a specific native conversation:
 
 ```sh
-aoe session set-session-id <session-name-or-id> <native-session-id>
+aoe2 session set-session-id <session-name-or-id> <native-session-id>
 ```
 
 The pin is sticky: every launch uses the agent's native resume argument until you change it. If AoE cannot prove whether a pinned conversation is invalid and only sees the resumed pane exit, it preserves the pinned ID and reports a recoverable resume failure instead of starting fresh automatically.
@@ -51,12 +51,35 @@ The pin is sticky: every launch uses the agent's native resume argument until yo
 Retry after fixing the underlying issue, set a different conversation ID, or explicitly start fresh once:
 
 ```sh
-aoe session set-session-id <session-name-or-id> ""
+aoe2 session set-session-id <session-name-or-id> ""
 ```
 
 This is one-shot. The next launch starts fresh, then automatic capture takes over again when the matrix supports that environment.
 
 Structured-view sessions manage their own conversation through ACP and reject `set-session-id`. Toggle the session out of structured view first, or set the resume target through the structured view UI.
+
+## Onboarding a conversation from another terminal
+
+Use `aoe2 session onboard` to add an existing Codex or Claude Code conversation to AoE. It records the exact native conversation ID and original working directory, preserving the saved history. The external process keeps running until you close it; onboarding does not move its terminal or interrupt its current turn.
+
+List conversations not already registered in the current AoE profile:
+
+```sh
+aoe2 session onboard --agent codex --list
+aoe2 session onboard --agent claude --list
+```
+
+Register the conversation you want by its full ID:
+
+```sh
+aoe2 session onboard --agent codex <conversation-id> --title "Existing work"
+```
+
+The new session appears in AoE. Finish the current turn and close the external agent, then open the new session in AoE or run `aoe2 session start <aoe-session-id>`. AoE resumes the same conversation from disk. If the external agent is already closed, add `--launch` to onboard and resume in one command.
+
+Codex discovery reads `$CODEX_HOME/sessions` or `~/.codex/sessions`, including compressed transcripts. Claude discovery reads `$CLAUDE_CONFIG_DIR/projects` or `~/.claude/projects`. Profile environment overrides take precedence, matching the environment AoE uses to launch the agent. For a custom store, configure its environment variable in the AoE profile or start AoE with the same value. Missing working directories are listed but cannot be onboarded until restored.
+
+`--group <name>` places the session in an AoE group; `--json` returns machine-readable discovery or registration results. Repeating onboarding for a conversation already in the current profile returns that AoE session instead of creating a duplicate. `aoe2 session adopt` is an alias.
 
 ## Importing existing Claude Code sessions (web dashboard)
 

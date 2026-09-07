@@ -3707,10 +3707,10 @@ impl HomeView {
                 ) {
                     let msg = match &method {
                         InstallMethod::Nix => {
-                            "Nix install: run `nix run github:agent-of-empires/agent-of-empires` to update".to_string()
+                            "Nix install: run `nix run github:maramizo/agent-of-empires-2` to update".to_string()
                         }
                         InstallMethod::Cargo => {
-                            "Cargo install: run `cargo install --git https://github.com/agent-of-empires/agent-of-empires aoe`".to_string()
+                            "Cargo install: run `cargo install --git https://github.com/maramizo/agent-of-empires-2 agent-of-empires-2`".to_string()
                         }
                         InstallMethod::Unknown { .. } => {
                             "Unknown install method: run `aoe update` in a terminal for instructions".to_string()

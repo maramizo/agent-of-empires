@@ -647,6 +647,17 @@ pub async fn start_server(config: ServerConfig<'_>) -> anyhow::Result<()> {
     );
 
     let state = Arc::new(AppState {
+        monitors: super::monitors::Runtime::new(format!(
+            "http://{}:{}",
+            if host == "0.0.0.0" {
+                "127.0.0.1"
+            } else if host == "::" || host == "[::]" {
+                "[::1]"
+            } else {
+                host
+            },
+            local_port
+        )),
         profile: profile.to_string(),
         read_only,
         cityhall_mode: std::env::var_os("AOE_CITYHALL_MODE").is_some(),
@@ -960,6 +971,8 @@ pub async fn start_server(config: ServerConfig<'_>) -> anyhow::Result<()> {
         token_manager.spawn_rotation_task();
     }
 
+    super::monitors::start(state.clone());
+
     // Graceful shutdown: SIGINT (Ctrl-C), SIGTERM (`aoe serve --stop`),
     // and SIGHUP (parent session died). Without these, the default handler
     // kills the process immediately, skipping PID/URL file cleanup.
@@ -1006,10 +1019,12 @@ pub async fn start_server(config: ServerConfig<'_>) -> anyhow::Result<()> {
             tracing::info!(target: "serve.shutdown", "received ctrl-c, shutting down");
         }
         let plugin_host = shutdown_state.plugin_host.clone();
+        let monitor_state = shutdown_state.clone();
         run_shutdown_sequence(
             &shutdown_state.shutdown,
             SHUTDOWN_GRACE,
             async move {
+                super::monitors::wait_for_shutdown(&monitor_state).await;
                 if let Some(host) = plugin_host {
                     host.shutdown().await;
                 }

@@ -52,6 +52,25 @@ pub mod worker_registry;
 /// protocol-agnostic `worker` substrate they build on.
 pub mod runner;
 
+/// Executable path suitable for launching helpers after an in-place update.
+pub(crate) fn current_exe_for_spawn() -> std::io::Result<std::path::PathBuf> {
+    let path = std::env::current_exe()?;
+    #[cfg(target_os = "linux")]
+    let path = linux::replacement_executable_path(path);
+    Ok(path)
+}
+
+pub(crate) fn configure_process_group(command: &mut Command) {
+    platform::configure_process_group(command);
+}
+
+pub(crate) fn kill_monitor_process_group(pid: u32) {
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    unix::kill_group_by_pid(pid);
+    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+    kill_process_tree(pid);
+}
+
 const WAIT_POLL_INTERVAL: Duration = Duration::from_millis(25);
 const PROCESS_GROUP_TERMINATION_GRACE: Duration = Duration::from_millis(250);
 

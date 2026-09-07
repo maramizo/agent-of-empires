@@ -18,6 +18,7 @@ pub(crate) mod idle_reap;
 pub(crate) mod ip_discovery;
 pub mod live_ws;
 pub mod login;
+pub(crate) mod monitors;
 mod pane;
 pub mod push;
 pub mod push_send;

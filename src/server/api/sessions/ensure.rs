@@ -31,7 +31,15 @@ use super::*;
 pub async fn ensure_session(
     State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
+    body: Result<
+        Option<Json<crate::session::launch_options::LaunchOptions>>,
+        axum::extract::rejection::JsonRejection,
+    >,
 ) -> impl IntoResponse {
+    let options = match body {
+        Ok(value) => value.map(|Json(v)| v).unwrap_or_default(),
+        Err(error) => return error.into_response(),
+    };
     // CityHall: only act on structured sessions this mode created; refuse a
     // non-structured (or unknown) target so a locked-down client cannot
     // respawn/destroy/edit an enumerated plain session. See #7.
@@ -45,7 +53,7 @@ pub async fn ensure_session(
     let _guard = inst_lock.lock().await;
 
     let instances = state.instances.read().await;
-    let Some(instance) = instances.iter().find(|i| i.id == id).cloned() else {
+    let Some(mut instance) = instances.iter().find(|i| i.id == id).cloned() else {
         return (
             StatusCode::NOT_FOUND,
             Json(serde_json::json!({"error": "not_found"})),
@@ -53,6 +61,20 @@ pub async fn ensure_session(
             .into_response();
     };
     drop(instances);
+
+    let launch = instance.terminal_launch.merged(&options);
+    if !options.is_empty() {
+        if state.read_only {
+            return crate::server::api::read_only_response();
+        }
+        if instance.is_structured() {
+            return (StatusCode::BAD_REQUEST, Json(serde_json::json!({"error":"unsupported_launch_options", "message":"Set structured model and effort on create_agent or through the structured agent configuration"}))).into_response();
+        }
+        if let Err(error) = launch.validate(&instance.tool, false, instance.has_command_override())
+        {
+            return (StatusCode::BAD_REQUEST, Json(serde_json::json!({"error":"invalid_launch_options", "message":error.to_string()}))).into_response();
+        }
+    }
 
     // Inspect tmux + make the restart decision on a blocking thread. Refresh
     // the cache first so rapid re-calls see the true current state (the
@@ -108,6 +130,9 @@ pub async fn ensure_session(
     };
 
     if !needs_restart {
+        if launch != instance.terminal_launch {
+            return (StatusCode::CONFLICT, Json(serde_json::json!({"error":"agent_already_running", "message":"Stop this agent before changing its launch settings"}))).into_response();
+        }
         return (StatusCode::OK, Json(serde_json::json!({"status": "alive"}))).into_response();
     }
 
@@ -125,9 +150,31 @@ pub async fn ensure_session(
             .into_response();
     }
 
+    if launch != instance.terminal_launch {
+        let persist_id = id.clone();
+        let saved = launch.clone();
+        if persist_session_update(
+            instance.source_profile.clone(),
+            "launch options",
+            state.file_watch.clone(),
+            move |instances| {
+                if let Some(inst) = instances.iter_mut().find(|i| i.id == persist_id) {
+                    inst.terminal_launch = saved;
+                }
+            },
+        )
+        .await
+        .is_err()
+        {
+            return persist_failed_response();
+        }
+        instance.terminal_launch = launch;
+    }
+
     {
         let mut instances = state.instances.write().await;
         if let Some(inst) = instances.iter_mut().find(|i| i.id == id) {
+            inst.terminal_launch = instance.terminal_launch.clone();
             inst.status = crate::session::Status::Starting;
             inst.last_error = None;
         }

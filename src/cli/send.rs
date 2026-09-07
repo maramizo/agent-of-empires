@@ -1,6 +1,6 @@
 //! `agent-of-empires send` subcommand implementation
 
-use anyhow::{bail, Result};
+use anyhow::{bail, Context, Result};
 use clap::Args;
 
 use crate::session::{EnsureReadyError, EnsureReadyOutcome, Storage};
@@ -32,7 +32,6 @@ pub async fn run(profile: &str, args: SendArgs) -> Result<()> {
     let inst = super::resolve_session(&args.identifier, &instances)?;
     let session_id = inst.id.clone();
     let session_title = inst.title.clone();
-    let tool = inst.tool.clone();
 
     // Revive the pane if needed before delivering keystrokes. Without this,
     // a send to a dead pane silently writes to a corpse with no agent to
@@ -69,23 +68,11 @@ pub async fn run(profile: &str, args: SendArgs) -> Result<()> {
         );
     }
 
-    // Wait for the pane to become ready before typing. A pane that exists
-    // is not necessarily an agent that's finished booting: a session
-    // started by an earlier, separate `aoe session start` reports
-    // `EnsureReadyOutcome::AlreadyAlive` above with no wait at all, and
-    // agents with no interposed shell (e.g. opencode) clear the pane's
-    // "running a shell" check almost immediately even though their own TUI
-    // can still take several more seconds to render and accept input. A
-    // message typed into that window is silently dropped with no error.
-    // Bounded so a genuinely busy/streaming agent doesn't block `send`
-    // forever.
-    tmux_session.wait_until_ready(
-        std::time::Duration::from_secs(5),
-        crate::agents::ready_marker(&tool),
-    );
-
-    let delay = crate::agents::send_keys_enter_delay(&tool);
-    tmux_session.send_keys_with_delay(&args.message, delay)?;
+    let target = instances
+        .iter()
+        .find(|i| i.id == session_id)
+        .context("Session disappeared before delivery")?;
+    let delivery = target.send_prompt(&args.message)?;
 
     // Stamp last_accessed_at so the "last activity" column reflects user
     // interaction, and remap the status to Running. The agent has just been
@@ -114,6 +101,9 @@ pub async fn run(profile: &str, args: SendArgs) -> Result<()> {
         );
     }
 
-    println!("Sent message to '{}'", session_title);
+    println!(
+        "{} message to '{}' via {}",
+        delivery.disposition, session_title, delivery.backend
+    );
     Ok(())
 }

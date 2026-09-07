@@ -365,6 +365,22 @@ impl Instance {
         }
     }
 
+    fn wrap_codex_terminal(&self, command: String) -> Result<String> {
+        if !self.uses_codex_queue()
+            || self.is_sandboxed()
+            || self.has_command_override()
+            || self.extra_args.contains("--remote")
+        {
+            return Ok(command);
+        }
+        Ok(format!(
+            "{} __codex-terminal {} {}",
+            shell_escape(&crate::process::current_exe_for_spawn()?.to_string_lossy()),
+            shell_escape(self.tmux_session()?.name()),
+            command
+        ))
+    }
+
     pub(super) fn prepare_launch_command(&mut self) -> Result<PreparedLaunch> {
         let expected_prior_sid = self.agent_session_id.clone();
         let expected_prior_intent = self.resume_intent.clone();
@@ -385,6 +401,11 @@ impl Instance {
     /// this phase hook-free prevents a revalidation retry from replaying user
     /// code while the lifecycle lock is held.
     pub(super) fn build_launch_command(&mut self) -> Result<LaunchCommandParts> {
+        self.terminal_launch.validate(
+            &self.tool,
+            self.is_structured(),
+            self.has_command_override(),
+        )?;
         if self.tool == "omp" && !self.has_command_override() {
             reject_omp_secret_args(&crate::session::config::quote_model_value_in_args(
                 &self.extra_args,
@@ -425,6 +446,9 @@ impl Instance {
             } else {
                 format!("{} {}", launch_cmd, self.extra_args)
             };
+            let mut base_cmd = base_cmd;
+            self.terminal_launch
+                .append_args(&self.tool, &mut base_cmd)?;
             let mut tool_cmd = if self.is_yolo_mode() {
                 if let Some(ref yolo) = agent.and_then(|a| a.yolo.as_ref()) {
                     match yolo {
@@ -606,12 +630,14 @@ impl Instance {
                             crate::session::config::quote_model_value_in_args(&self.extra_args)
                         );
                     }
+                    self.terminal_launch.append_args(&self.tool, &mut cmd)?;
                     if self.is_yolo_mode() {
                         if let Some(ref yolo) = a.yolo {
                             apply_yolo_mode(&mut cmd, yolo, false);
                         }
                     }
                     let is_existing = self.apply_session_flags(&mut cmd, "host agent")?;
+                    cmd = self.wrap_codex_terminal(cmd)?;
                     apply_agent_launch_env(&mut cmd, agent);
                     let raw_command = format!("{}{}", env_prefix, cmd);
                     let command = if let Some(plan) = omp_capture_plan.as_ref() {
@@ -636,12 +662,14 @@ impl Instance {
             if !self.extra_args.is_empty() {
                 cmd = format!("{} {}", cmd, self.extra_args);
             }
+            self.terminal_launch.append_args(&self.tool, &mut cmd)?;
             if self.is_yolo_mode() {
                 if let Some(yolo) = agent.and_then(|a| a.yolo.as_ref()) {
                     apply_yolo_mode(&mut cmd, yolo, false);
                 }
             }
             let is_existing = self.apply_session_flags(&mut cmd, "host custom")?;
+            cmd = self.wrap_codex_terminal(cmd)?;
             apply_agent_launch_env(&mut cmd, agent);
             let raw_command = format!("{}{}", env_prefix, cmd);
             let command = if let Some(plan) = omp_capture_plan.as_ref() {
@@ -1284,6 +1312,35 @@ mod tests {
 
         inst.command = "my-agent".to_string();
         assert!(!inst.expects_shell());
+    }
+
+    #[test]
+    fn terminal_launch_choices_survive_resume_and_serialization() {
+        let mut inst = Instance::new("test", "/tmp/test");
+        inst.tool = "codex".into();
+        inst.command = "codex".into();
+        inst.agent_session_id = Some("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee".into());
+        inst.terminal_launch = crate::session::launch_options::LaunchOptions {
+            model: Some("chosen-model".into()),
+            effort: Some("high".into()),
+            fast_mode: Some(true),
+        };
+        let mut inst: Instance =
+            serde_json::from_str(&serde_json::to_string(&inst).unwrap()).unwrap();
+        let (cmd, _, _) = inst
+            .build_host_command(crate::agents::get_agent("codex"))
+            .unwrap();
+        let cmd = cmd.unwrap();
+        for value in [
+            "chosen-model",
+            "model_reasoning_effort",
+            "service_tier",
+            "fast",
+            "resume",
+            "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+        ] {
+            assert!(cmd.contains(value), "Missing {value} in {cmd}");
+        }
     }
 
     #[test]

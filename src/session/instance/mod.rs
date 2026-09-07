@@ -548,6 +548,11 @@ pub struct Instance {
     /// prefix or an explicit `anthropic:`/`openai:`/`google:` prefix.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub agent_model: Option<String>,
+    #[serde(
+        default,
+        skip_serializing_if = "crate::session::launch_options::LaunchOptions::is_empty"
+    )]
+    pub terminal_launch: crate::session::launch_options::LaunchOptions,
     /// Reasoning effort ("thought level") this session was explicitly pinned
     /// to, applied through the agent's `category:"thought_level"` config
     /// option after every worker (re)spawn. `None` means the session inherits

@@ -732,7 +732,7 @@ fn extract_codex_uuid_from_filename(path: &Path) -> Option<String> {
     let stem = path.file_stem()?.to_str()?;
     let stem = stem.strip_suffix(".jsonl").unwrap_or(stem);
     if stem.len() >= 36 {
-        let candidate = &stem[stem.len() - 36..];
+        let candidate = stem.get(stem.len() - 36..)?;
         if Uuid::parse_str(candidate).is_ok() {
             return Some(candidate.to_string());
         }
@@ -835,6 +835,45 @@ fn collect_codex_sessions(
             .map(|(relative, modified)| (dir.join(relative), modified)),
     );
     Ok(())
+}
+
+/// Discover exact Codex identities for an explicit user-selected import.
+/// Unlike automatic capture, this list never selects a conversation by recency.
+pub(crate) fn codex_import_candidates(
+    sessions_dir: &Path,
+) -> Result<Vec<(String, String, std::time::SystemTime)>> {
+    let root = crate::session::AnchoredDir::open(sessions_dir)?;
+    let mut entries = Vec::new();
+    collect_codex_sessions_anchored(&root, Path::new(""), 0, &mut 0, &mut entries)?;
+    let mut candidates = Vec::new();
+    for (relative, modified) in entries {
+        let Some(id) = extract_codex_uuid_from_filename(&relative) else {
+            continue;
+        };
+        // Only the bounded header is read, even for a large conversation.
+        let Some(file) = root.open_regular(&relative, usize::MAX).ok().flatten() else {
+            continue;
+        };
+        let line = if relative.extension().and_then(|s| s.to_str()) == Some("zst") {
+            zstd::stream::read::Decoder::new(file)
+                .ok()
+                .and_then(|reader| read_limited_first_line(reader, CODEX_METADATA_MAX_BYTES))
+        } else {
+            read_limited_first_line(file, CODEX_METADATA_MAX_BYTES)
+        };
+        let Some(line) = line else { continue };
+        let Ok(record) = serde_json::from_str::<serde_json::Value>(&line) else {
+            continue;
+        };
+        if record["type"] != "session_meta" || record["payload"]["source"].is_object() {
+            continue;
+        }
+        if let Some(cwd) = parse_codex_cwd_from_json(&line, &id) {
+            candidates.push((id, cwd, modified));
+        }
+    }
+    candidates.sort_by_key(|(_, _, modified)| std::cmp::Reverse(*modified));
+    Ok(candidates)
 }
 
 /// Poll the mounted Codex store for a post-launch rollout whose CWD matches the container.
@@ -1777,6 +1816,63 @@ mod tests {
     fn test_extract_codex_uuid_non_standard_filename_returns_none() {
         let path = PathBuf::from("my-thread-name.jsonl");
         assert_eq!(extract_codex_uuid_from_filename(&path), None);
+    }
+
+    #[test]
+    fn codex_onboard_discovers_large_and_compressed_roots_only() {
+        let tmp = tempfile::tempdir().unwrap();
+        let date = tmp.path().join("2026/09/06");
+        std::fs::create_dir_all(&date).unwrap();
+        let large = "11111111-1111-4111-8111-111111111111";
+        let compressed = "22222222-2222-4222-8222-222222222222";
+        let child = "33333333-3333-4333-8333-333333333333";
+        let mismatched = "44444444-4444-4444-8444-444444444444";
+        for (id, source, metadata_id, packed) in [
+            (large, serde_json::json!("cli"), large, false),
+            (compressed, serde_json::json!("cli"), compressed, true),
+            (child, serde_json::json!({"subagent": {}}), child, false),
+            (mismatched, serde_json::json!("cli"), large, false),
+        ] {
+            let header = format!(
+                "{}\n",
+                serde_json::json!({
+                    "type": "session_meta", "payload": {
+                        "id": metadata_id, "session_id": metadata_id,
+                        "cwd": "/original/project", "source": source
+                    }
+                })
+            );
+            let suffix = if packed { "jsonl.zst" } else { "jsonl" };
+            let path = date.join(format!("rollout-2026-09-06T01-00-00-{id}.{suffix}"));
+            if packed {
+                std::fs::write(
+                    &path,
+                    zstd::stream::encode_all(header.as_bytes(), 1).unwrap(),
+                )
+                .unwrap();
+            } else {
+                std::fs::write(&path, header).unwrap();
+                if id == large {
+                    std::fs::OpenOptions::new()
+                        .write(true)
+                        .open(path)
+                        .unwrap()
+                        .set_len((CODEX_ROLLOUT_MAX_BYTES + 1) as u64)
+                        .unwrap();
+                }
+            }
+        }
+        let candidates = codex_import_candidates(tmp.path()).unwrap();
+        let mut ids: Vec<_> = candidates.iter().map(|(id, _, _)| id.as_str()).collect();
+        ids.sort();
+        assert_eq!(ids, vec![large, compressed]);
+        assert!(candidates
+            .iter()
+            .all(|(_, cwd, _)| cwd == "/original/project"));
+        assert!(extract_codex_uuid_from_filename(Path::new(
+            "rollout-🦀xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.jsonl"
+        ))
+        .is_none());
     }
 
     #[test]

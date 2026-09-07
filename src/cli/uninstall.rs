@@ -61,9 +61,9 @@ pub async fn run(args: UninstallArgs) -> Result<()> {
 
     let mut found_items: Vec<FoundItem> = Vec::new();
 
-    // Check for Homebrew installation (formula is named "aoe")
+    // Check for Homebrew installation (formula is named "aoe2")
     let homebrew_installed = Command::new("brew")
-        .args(["list", "aoe"])
+        .args(["list", "aoe2"])
         .output()
         .map(|output| output.status.success())
         .unwrap_or(false);
@@ -76,14 +76,11 @@ pub async fn run(args: UninstallArgs) -> Result<()> {
         println!("Found: Homebrew installation");
     }
 
-    // Check common binary locations for both "aoe" and "agent-of-empires"
+    // Check common binary locations for "aoe2"
     let mut binary_locations = vec![
-        home_dir.join(".local/bin/aoe"),
-        PathBuf::from("/usr/local/bin/aoe"),
-        home_dir.join("bin/aoe"),
-        home_dir.join(".local/bin/agent-of-empires"),
-        PathBuf::from("/usr/local/bin/agent-of-empires"),
-        home_dir.join("bin/agent-of-empires"),
+        home_dir.join(".local/bin/aoe2"),
+        PathBuf::from("/usr/local/bin/aoe2"),
+        home_dir.join("bin/aoe2"),
     ];
 
     // Also check the currently running binary's location
@@ -162,7 +159,7 @@ pub async fn run(args: UninstallArgs) -> Result<()> {
 
     for item in &found_items {
         match item.item_type.as_str() {
-            "homebrew" => println!("  • Homebrew package: aoe"),
+            "homebrew" => println!("  • Homebrew package: aoe2"),
             "binary" => println!("  • Binary: {}", item.path.display()),
             "data" => {
                 if args.keep_data {
@@ -216,7 +213,7 @@ pub async fn run(args: UninstallArgs) -> Result<()> {
         match item.item_type.as_str() {
             "homebrew" => {
                 println!("Removing Homebrew package...");
-                let _ = Command::new("brew").args(["uninstall", "aoe"]).status();
+                let _ = Command::new("brew").args(["uninstall", "aoe2"]).status();
                 println!("✓ Homebrew package removed");
             }
             "binary" => {
@@ -240,7 +237,7 @@ pub async fn run(args: UninstallArgs) -> Result<()> {
                 println!("Removing tmux configuration...");
                 if let Ok(content) = fs::read_to_string(&item.path) {
                     // Backup
-                    let backup_path = format!("{}.bak.aoe-uninstall", item.path.display());
+                    let backup_path = format!("{}.bak.aoe2-uninstall", item.path.display());
                     let _ = fs::write(&backup_path, &content);
 
                     // Remove agent-of-empires config block
@@ -288,7 +285,7 @@ pub async fn run(args: UninstallArgs) -> Result<()> {
 
     println!();
     println!("Thank you for using Agent of Empires!");
-    println!("Feedback: https://github.com/agent-of-empires/agent-of-empires/issues");
+    println!("Feedback: https://github.com/maramizo/agent-of-empires-2/issues");
 
     Ok(())
 }

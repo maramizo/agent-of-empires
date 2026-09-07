@@ -10,8 +10,8 @@ use tracing::warn;
 
 use crate::session::{get_app_dir, get_update_settings};
 
-const GITHUB_OWNER: &str = "agent-of-empires";
-const GITHUB_REPO: &str = "agent-of-empires";
+const GITHUB_OWNER: &str = "maramizo";
+const GITHUB_REPO: &str = "agent-of-empires-2";
 
 /// How long a cached update check stays fresh, and how often long-lived
 /// processes (the TUI) re-check. Daily is frequent enough for a banner;
@@ -37,7 +37,7 @@ pub fn release_page_url(version: &str) -> String {
         format!("v{}", version)
     };
     format!(
-        "https://github.com/agent-of-empires/agent-of-empires/releases/tag/{}",
+        "https://github.com/maramizo/agent-of-empires-2/releases/tag/{}",
         tag
     )
 }

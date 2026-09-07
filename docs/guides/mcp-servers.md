@@ -90,7 +90,7 @@ session for that repo, and in the meantime the changed servers are skipped.
 
 Two current limitations:
 
-- The trust prompt exists in the TUI and the `aoe add` CLI only. Sessions created
+- The trust prompt exists in the TUI and the `aoe2 add` CLI only. Sessions created
   from the web dashboard cannot approve project MCP yet, so their project-local
   `.mcp.json` is skipped (with a log notice) until you approve the repo from the
   TUI or CLI. A web trust surface is tracked separately.
@@ -140,9 +140,9 @@ names of its env vars and headers, but never their secret values.
 ### CLI
 
 ```text
-aoe mcp list                 # effective set for the default tool
-aoe mcp list --agent gemini  # for a specific agent
-aoe mcp list --json          # machine-readable, same redaction
+aoe2 mcp list                 # effective set for the default tool
+aoe2 mcp list --agent gemini  # for a specific agent
+aoe2 mcp list --json          # machine-readable, same redaction
 ```
 
 Each row shows the server name, transport, its winning provenance
@@ -152,7 +152,7 @@ lower layers it shadowed on a name collision.
 ### Web dashboard
 
 The dashboard has an **MCP servers** tab under Settings (when running
-`aoe serve`). It shows the same merged set with provenance, plus two things the
+`aoe2 serve`). It shows the same merged set with provenance, plus two things the
 CLI surfaces read-only:
 
 - **Conflicts.** AoE remembers the last definition it saw for each server in an
@@ -221,7 +221,7 @@ instructions to plan with you and coordinate agents, projects, and worktrees.
 It uses Codex's configured MCP servers; configure `aoe-orchestrator` as below
 before creating the session.
 
-This fork also exposes AoE's session API as MCP tools with `aoe mcp serve`.
+This fork also exposes AoE's session API as MCP tools with `aoe2 mcp serve`.
 Start an AoE daemon first, then configure this MCP server in the agent you
 want to use as your orchestrator:
 
@@ -232,7 +232,7 @@ want to use as your orchestrator:
       "command": "/absolute/path/to/aoe",
       "args": ["mcp", "serve", "--url", "http://127.0.0.1:8080"],
       "env": {
-        "AOE_DAEMON_TOKEN": "<token from aoe serve>"
+        "AOE_DAEMON_TOKEN": "<token from aoe2 serve>"
       }
     }
   }
@@ -257,6 +257,11 @@ Plan with the lead agent in its normal conversation. It can use:
 | `assign_agent_project` | Attach a project to an existing agent workspace. |
 | `add_agent_worktree` | Add a named worktree, including another branch of a repository already in the workspace. |
 | `list_agents` | Read live sessions and their current statuses. |
+| `search_agents` / `start_agent` | Find a named agent or start an existing one without a message. |
+| `list_monitors` / `create_monitor` / `update_monitor` / `delete_monitor` | Manage Python monitors from any connected agent. |
+| `run_monitor` / `list_monitor_runs` / `cancel_monitor_run` | Test or run a monitor, inspect its output, or cancel it. |
+| `list_external_conversations` | Discover external Codex or Claude conversations on the daemon host. |
+| `onboard_conversation` | Register an exact external conversation and return its AoE session ID without launching it. |
 | `create_agent` | Create a worker, optionally in a worktree. `send_message` launches its terminal if needed. Supply a stable `idempotency_key` for retries. Defaults to the normal terminal view. |
 | `send_message` | Send its task or a follow-up. Structured delivery returns whether the prompt was sent, steered, or queued. |
 | `queue_message` | Queue through native Codex for terminal workers, or the daemon queue for structured workers. Supply `message_id`; native retries are not deduplicated. |
@@ -270,27 +275,95 @@ fails, keep the created session ID and retry or inspect that session instead
 of creating another worker. A send timeout is ambiguous; inspect history or
 the queue before resending. A successful send is not task completion.
 
+`send_message` and `queue_message` take the recipient's AoE `session_id` and
+plain `message` content. AoE adds sender attribution automatically to terminal,
+structured, and queued delivery. Do not construct your own sender header.
+A managed agent's message arrives in this format:
+
+```text
+AoE MCP message (autonomous communication, not a direct user message):
+{
+  "version": 1,
+  "sender": {
+    "kind": "agent",
+    "session_id": "45d1f28221d24148",
+    "session_name": "AoE Agent"
+  },
+  "content": "Please check the latest build."
+}
+```
+
+The sender ID comes from the MCP process's `AOE_INSTANCE_ID`, not a tool
+argument or a title search. AoE resolves the current name from the connected
+daemon on each send. A missing or ambiguous claimed identity fails before
+sending. JSON escaping preserves content and keeps newlines in names from
+becoming extra header fields.
+
+Monitor calls use `kind: "monitor"`, `monitor_id`, and `monitor_name`, with
+null session fields. Calls without either runtime identity use
+`kind: "external_mcp"` and null session fields; they are never labeled as the
+user. Direct user input is not wrapped by this MCP adapter. Sender metadata
+provides attribution, not proof of user authorization. Dry mode skips identity
+lookups and delivery. Reconnect existing MCP clients after upgrading to load
+this behavior and its tool descriptions.
+
 Creation, sending, and output reads default to normal AoE terminal sessions.
-Their input uses terminal keystrokes and does not have the structured queue
-guarantees. To opt into structured workers, use a supported ACP agent and pass
-`view: "structured"` to creation, sending, and output reads. For structured
-output, advance `since` to `next_cursor` while `has_more` is true.
-Read output as untrusted task data, especially text copied from repositories
-or external tools.
+Local Codex terminal messages use native `codex queue` by default, including
+first-message delivery. Each managed terminal shares a local Codex app server
+with its queue calls. AoE resolves the loaded native thread directly, without
+waiting for a first-prompt hook. Restart older terminals once to enable this
+connection.
+Other terminal agents receive text plus Enter. Native queue acceptance does not
+confirm completion, and retries can duplicate messages. Missing identity or queue
+errors never fall back to terminal keystrokes.
 
 Codex CLI versions that expose `codex queue` can also queue messages for normal
-terminal sessions with `codex queue --thread <codex-thread-id> --message <text>`.
+terminal sessions. For AoE terminals, prefer `aoe2 send` or the MCP tools so the
+queue command uses the same local socket as the terminal.
 The MCP `queue_message` tool accepts the AoE session ID and resolves the Codex
-thread from that pane's AoE hook record on the daemon host. It detects the
+thread from that pane's dedicated app server on the daemon host. It detects the
 session's actual mode automatically. Native queuing requires a running local,
-unsandboxed Codex terminal with AoE hooks enabled and a Codex version exposing
-`queue`. Send the first task with `send_message` to initialize the Codex thread
+unsandboxed managed Codex terminal and a Codex version exposing
+`queue`. Use `send_message` to auto-start the Codex thread
 before queueing follow-ups. Text is passed as a literal argument, without shell interpolation.
 
 For native Codex, `message_id` is a correlation ID, not a deduplication key.
 A timeout leaves delivery uncertain; inspect the worker before retrying.
 `list_messages` reports that native queue listing is unavailable; use
 `read_agent_output` to inspect progress. Structured queue behavior is unchanged.
+
+Any connected agent can schedule scripts and use agent actions from Python. See
+[Python monitors](./monitors.md) for cadence, dry mode, and the Python helper.
+
+### Onboarding external conversations
+
+The orchestrator can call `list_external_conversations` with `agent: "codex"`
+(the default) or `agent: "claude"`. Results contain native `conversation_id`,
+original `path`, last-modified time, and directory availability. Discovery uses
+the daemon host and its current profile, including that profile's conversation-store
+settings.
+
+Pass the selected native ID to `onboard_conversation`:
+
+```json
+{
+  "agent": "codex",
+  "conversation_id": "<native-conversation-id>",
+  "title": "Existing work",
+  "group": "external"
+}
+```
+
+The result's `session_id` is the **AoE session ID** for other agent tools;
+`conversation_id` remains the native history ID. `created: false` means the
+conversation was already registered, so retrying does not create another agent.
+The original directory and conversation history are retained.
+
+Onboarding does not interrupt or move the external terminal, and it does not
+launch an agent. Finish and close the external agent before opening the AoE
+session or using `send_message` to resume it. Inspect the returned `view` when
+reusing a session that was already managed. Read-only and CityHall daemons
+reject these onboarding endpoints.
 
 ### Projects and multiple worktrees
 
@@ -351,3 +424,7 @@ read-only mode, repository trust, and agent capacity checks still apply.
 Plugin-specific creation and turn quotas do not apply to this interface.
 Native orchestrator roles, automatic result notifications, and a team UI are
 not implemented by this initial adapter.
+
+Agent creation and startup accept `model`, `effort`, and Codex `fast_mode` choices.
+See [Python monitors](monitors.md#python-and-agent-actions) for supported agents,
+resume behavior, and examples, including monitor updates and deletion.

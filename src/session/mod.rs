@@ -14,6 +14,7 @@ pub mod claude_import;
 pub mod config;
 // Depends on `crate::acp` (Event / event store) and is only driven from the
 // serve daemon. See #2808.
+pub mod codex_terminal;
 pub mod conversation_summary;
 pub mod deletion;
 pub(crate) mod environment;
@@ -21,10 +22,13 @@ pub mod fork;
 mod groups;
 pub mod idle_reap;
 mod instance;
+pub mod launch_options;
 pub mod mcp;
 mod move_journal;
+pub(crate) mod onboarding;
 pub mod poller;
 pub mod projects;
+pub mod prompt_delivery;
 pub(crate) mod recovery;
 pub mod restart;
 pub mod scope;

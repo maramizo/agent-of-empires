@@ -1,136 +1,137 @@
-# Command-Line Help for `aoe`
+# Command-Line Help for `aoe2`
 
-This document contains the help content for the `aoe` command-line program.
+This document contains the help content for the `aoe2` command-line program.
 
 **Command Overview:**
 
-* [`aoe`↴](#aoe)
-* [`aoe add`↴](#aoe-add)
-* [`aoe agents`↴](#aoe-agents)
-* [`aoe init`↴](#aoe-init)
-* [`aoe list`↴](#aoe-list)
-* [`aoe ps`↴](#aoe-ps)
-* [`aoe logs`↴](#aoe-logs)
-* [`aoe log-level`↴](#aoe-log-level)
-* [`aoe remove`↴](#aoe-remove)
-* [`aoe send`↴](#aoe-send)
-* [`aoe status`↴](#aoe-status)
-* [`aoe killall`↴](#aoe-killall)
-* [`aoe session`↴](#aoe-session)
-* [`aoe session start`↴](#aoe-session-start)
-* [`aoe session stop`↴](#aoe-session-stop)
-* [`aoe session restart`↴](#aoe-session-restart)
-* [`aoe session attach`↴](#aoe-session-attach)
-* [`aoe session show`↴](#aoe-session-show)
-* [`aoe session rename`↴](#aoe-session-rename)
-* [`aoe session set-worktree-name`↴](#aoe-session-set-worktree-name)
-* [`aoe session capture`↴](#aoe-session-capture)
-* [`aoe session current`↴](#aoe-session-current)
-* [`aoe session add-project`↴](#aoe-session-add-project)
-* [`aoe session set-session-id`↴](#aoe-session-set-session-id)
-* [`aoe session set-base`↴](#aoe-session-set-base)
-* [`aoe session snooze`↴](#aoe-session-snooze)
-* [`aoe session unsnooze`↴](#aoe-session-unsnooze)
-* [`aoe session favorite`↴](#aoe-session-favorite)
-* [`aoe session unfavorite`↴](#aoe-session-unfavorite)
-* [`aoe session color`↴](#aoe-session-color)
-* [`aoe session archive`↴](#aoe-session-archive)
-* [`aoe session unarchive`↴](#aoe-session-unarchive)
-* [`aoe session restore`↴](#aoe-session-restore)
-* [`aoe session import`↴](#aoe-session-import)
-* [`aoe session list-trash`↴](#aoe-session-list-trash)
-* [`aoe session empty-trash`↴](#aoe-session-empty-trash)
-* [`aoe group`↴](#aoe-group)
-* [`aoe group list`↴](#aoe-group-list)
-* [`aoe group create`↴](#aoe-group-create)
-* [`aoe group delete`↴](#aoe-group-delete)
-* [`aoe group move`↴](#aoe-group-move)
-* [`aoe plugin`↴](#aoe-plugin)
-* [`aoe plugin list`↴](#aoe-plugin-list)
-* [`aoe plugin info`↴](#aoe-plugin-info)
-* [`aoe plugin enable`↴](#aoe-plugin-enable)
-* [`aoe plugin disable`↴](#aoe-plugin-disable)
-* [`aoe plugin install`↴](#aoe-plugin-install)
-* [`aoe plugin update`↴](#aoe-plugin-update)
-* [`aoe plugin uninstall`↴](#aoe-plugin-uninstall)
-* [`aoe plugin hash`↴](#aoe-plugin-hash)
-* [`aoe plugin discover`↴](#aoe-plugin-discover)
-* [`aoe plugin outdated`↴](#aoe-plugin-outdated)
-* [`aoe profile`↴](#aoe-profile)
-* [`aoe profile list`↴](#aoe-profile-list)
-* [`aoe profile create`↴](#aoe-profile-create)
-* [`aoe profile delete`↴](#aoe-profile-delete)
-* [`aoe profile rename`↴](#aoe-profile-rename)
-* [`aoe profile default`↴](#aoe-profile-default)
-* [`aoe profile show`↴](#aoe-profile-show)
-* [`aoe project`↴](#aoe-project)
-* [`aoe project list`↴](#aoe-project-list)
-* [`aoe project add`↴](#aoe-project-add)
-* [`aoe project remove`↴](#aoe-project-remove)
-* [`aoe worktree`↴](#aoe-worktree)
-* [`aoe worktree list`↴](#aoe-worktree-list)
-* [`aoe worktree info`↴](#aoe-worktree-info)
-* [`aoe worktree cleanup`↴](#aoe-worktree-cleanup)
-* [`aoe tmux`↴](#aoe-tmux)
-* [`aoe tmux status`↴](#aoe-tmux-status)
-* [`aoe sounds`↴](#aoe-sounds)
-* [`aoe sounds install`↴](#aoe-sounds-install)
-* [`aoe sounds list`↴](#aoe-sounds-list)
-* [`aoe sounds test`↴](#aoe-sounds-test)
-* [`aoe theme`↴](#aoe-theme)
-* [`aoe theme list`↴](#aoe-theme-list)
-* [`aoe theme export`↴](#aoe-theme-export)
-* [`aoe theme dir`↴](#aoe-theme-dir)
-* [`aoe settings`↴](#aoe-settings)
-* [`aoe settings explain`↴](#aoe-settings-explain)
-* [`aoe cityhall`↴](#aoe-cityhall)
-* [`aoe cityhall export`↴](#aoe-cityhall-export)
-* [`aoe cityhall apply`↴](#aoe-cityhall-apply)
-* [`aoe telemetry`↴](#aoe-telemetry)
-* [`aoe telemetry status`↴](#aoe-telemetry-status)
-* [`aoe telemetry enable`↴](#aoe-telemetry-enable)
-* [`aoe telemetry disable`↴](#aoe-telemetry-disable)
-* [`aoe telemetry reset-id`↴](#aoe-telemetry-reset-id)
-* [`aoe mcp`↴](#aoe-mcp)
-* [`aoe mcp serve`↴](#aoe-mcp-serve)
-* [`aoe mcp list`↴](#aoe-mcp-list)
-* [`aoe skill`↴](#aoe-skill)
-* [`aoe skill list`↴](#aoe-skill-list)
-* [`aoe skill view`↴](#aoe-skill-view)
-* [`aoe skill add`↴](#aoe-skill-add)
-* [`aoe skill edit`↴](#aoe-skill-edit)
-* [`aoe skill adopt`↴](#aoe-skill-adopt)
-* [`aoe skill remove`↴](#aoe-skill-remove)
-* [`aoe skill sync`↴](#aoe-skill-sync)
-* [`aoe serve`↴](#aoe-serve)
-* [`aoe url`↴](#aoe-url)
-* [`aoe acp`↴](#aoe-acp)
-* [`aoe acp doctor`↴](#aoe-acp-doctor)
-* [`aoe acp agents`↴](#aoe-acp-agents)
-* [`aoe acp stop`↴](#aoe-acp-stop)
-* [`aoe acp kill`↴](#aoe-acp-kill)
-* [`aoe acp logs`↴](#aoe-acp-logs)
-* [`aoe acp restart`↴](#aoe-acp-restart)
-* [`aoe acp history`↴](#aoe-acp-history)
-* [`aoe acp status`↴](#aoe-acp-status)
-* [`aoe acp prompt`↴](#aoe-acp-prompt)
-* [`aoe acp approve`↴](#aoe-acp-approve)
-* [`aoe acp cancel`↴](#aoe-acp-cancel)
-* [`aoe acp tail`↴](#aoe-acp-tail)
-* [`aoe acp attach`↴](#aoe-acp-attach)
-* [`aoe acp switch-agent`↴](#aoe-acp-switch-agent)
-* [`aoe uninstall`↴](#aoe-uninstall)
-* [`aoe update`↴](#aoe-update)
-* [`aoe migrate`↴](#aoe-migrate)
-* [`aoe completion`↴](#aoe-completion)
+* [`aoe2`↴](#aoe2)
+* [`aoe2 add`↴](#aoe2-add)
+* [`aoe2 agents`↴](#aoe2-agents)
+* [`aoe2 init`↴](#aoe2-init)
+* [`aoe2 list`↴](#aoe2-list)
+* [`aoe2 ps`↴](#aoe2-ps)
+* [`aoe2 logs`↴](#aoe2-logs)
+* [`aoe2 log-level`↴](#aoe2-log-level)
+* [`aoe2 remove`↴](#aoe2-remove)
+* [`aoe2 send`↴](#aoe2-send)
+* [`aoe2 status`↴](#aoe2-status)
+* [`aoe2 killall`↴](#aoe2-killall)
+* [`aoe2 session`↴](#aoe2-session)
+* [`aoe2 session start`↴](#aoe2-session-start)
+* [`aoe2 session stop`↴](#aoe2-session-stop)
+* [`aoe2 session restart`↴](#aoe2-session-restart)
+* [`aoe2 session attach`↴](#aoe2-session-attach)
+* [`aoe2 session show`↴](#aoe2-session-show)
+* [`aoe2 session rename`↴](#aoe2-session-rename)
+* [`aoe2 session set-worktree-name`↴](#aoe2-session-set-worktree-name)
+* [`aoe2 session capture`↴](#aoe2-session-capture)
+* [`aoe2 session current`↴](#aoe2-session-current)
+* [`aoe2 session add-project`↴](#aoe2-session-add-project)
+* [`aoe2 session set-session-id`↴](#aoe2-session-set-session-id)
+* [`aoe2 session set-base`↴](#aoe2-session-set-base)
+* [`aoe2 session snooze`↴](#aoe2-session-snooze)
+* [`aoe2 session unsnooze`↴](#aoe2-session-unsnooze)
+* [`aoe2 session favorite`↴](#aoe2-session-favorite)
+* [`aoe2 session unfavorite`↴](#aoe2-session-unfavorite)
+* [`aoe2 session color`↴](#aoe2-session-color)
+* [`aoe2 session archive`↴](#aoe2-session-archive)
+* [`aoe2 session unarchive`↴](#aoe2-session-unarchive)
+* [`aoe2 session restore`↴](#aoe2-session-restore)
+* [`aoe2 session import`↴](#aoe2-session-import)
+* [`aoe2 session onboard`↴](#aoe2-session-onboard)
+* [`aoe2 session list-trash`↴](#aoe2-session-list-trash)
+* [`aoe2 session empty-trash`↴](#aoe2-session-empty-trash)
+* [`aoe2 group`↴](#aoe2-group)
+* [`aoe2 group list`↴](#aoe2-group-list)
+* [`aoe2 group create`↴](#aoe2-group-create)
+* [`aoe2 group delete`↴](#aoe2-group-delete)
+* [`aoe2 group move`↴](#aoe2-group-move)
+* [`aoe2 plugin`↴](#aoe2-plugin)
+* [`aoe2 plugin list`↴](#aoe2-plugin-list)
+* [`aoe2 plugin info`↴](#aoe2-plugin-info)
+* [`aoe2 plugin enable`↴](#aoe2-plugin-enable)
+* [`aoe2 plugin disable`↴](#aoe2-plugin-disable)
+* [`aoe2 plugin install`↴](#aoe2-plugin-install)
+* [`aoe2 plugin update`↴](#aoe2-plugin-update)
+* [`aoe2 plugin uninstall`↴](#aoe2-plugin-uninstall)
+* [`aoe2 plugin hash`↴](#aoe2-plugin-hash)
+* [`aoe2 plugin discover`↴](#aoe2-plugin-discover)
+* [`aoe2 plugin outdated`↴](#aoe2-plugin-outdated)
+* [`aoe2 profile`↴](#aoe2-profile)
+* [`aoe2 profile list`↴](#aoe2-profile-list)
+* [`aoe2 profile create`↴](#aoe2-profile-create)
+* [`aoe2 profile delete`↴](#aoe2-profile-delete)
+* [`aoe2 profile rename`↴](#aoe2-profile-rename)
+* [`aoe2 profile default`↴](#aoe2-profile-default)
+* [`aoe2 profile show`↴](#aoe2-profile-show)
+* [`aoe2 project`↴](#aoe2-project)
+* [`aoe2 project list`↴](#aoe2-project-list)
+* [`aoe2 project add`↴](#aoe2-project-add)
+* [`aoe2 project remove`↴](#aoe2-project-remove)
+* [`aoe2 worktree`↴](#aoe2-worktree)
+* [`aoe2 worktree list`↴](#aoe2-worktree-list)
+* [`aoe2 worktree info`↴](#aoe2-worktree-info)
+* [`aoe2 worktree cleanup`↴](#aoe2-worktree-cleanup)
+* [`aoe2 tmux`↴](#aoe2-tmux)
+* [`aoe2 tmux status`↴](#aoe2-tmux-status)
+* [`aoe2 sounds`↴](#aoe2-sounds)
+* [`aoe2 sounds install`↴](#aoe2-sounds-install)
+* [`aoe2 sounds list`↴](#aoe2-sounds-list)
+* [`aoe2 sounds test`↴](#aoe2-sounds-test)
+* [`aoe2 theme`↴](#aoe2-theme)
+* [`aoe2 theme list`↴](#aoe2-theme-list)
+* [`aoe2 theme export`↴](#aoe2-theme-export)
+* [`aoe2 theme dir`↴](#aoe2-theme-dir)
+* [`aoe2 settings`↴](#aoe2-settings)
+* [`aoe2 settings explain`↴](#aoe2-settings-explain)
+* [`aoe2 cityhall`↴](#aoe2-cityhall)
+* [`aoe2 cityhall export`↴](#aoe2-cityhall-export)
+* [`aoe2 cityhall apply`↴](#aoe2-cityhall-apply)
+* [`aoe2 telemetry`↴](#aoe2-telemetry)
+* [`aoe2 telemetry status`↴](#aoe2-telemetry-status)
+* [`aoe2 telemetry enable`↴](#aoe2-telemetry-enable)
+* [`aoe2 telemetry disable`↴](#aoe2-telemetry-disable)
+* [`aoe2 telemetry reset-id`↴](#aoe2-telemetry-reset-id)
+* [`aoe2 mcp`↴](#aoe2-mcp)
+* [`aoe2 mcp serve`↴](#aoe2-mcp-serve)
+* [`aoe2 mcp list`↴](#aoe2-mcp-list)
+* [`aoe2 skill`↴](#aoe2-skill)
+* [`aoe2 skill list`↴](#aoe2-skill-list)
+* [`aoe2 skill view`↴](#aoe2-skill-view)
+* [`aoe2 skill add`↴](#aoe2-skill-add)
+* [`aoe2 skill edit`↴](#aoe2-skill-edit)
+* [`aoe2 skill adopt`↴](#aoe2-skill-adopt)
+* [`aoe2 skill remove`↴](#aoe2-skill-remove)
+* [`aoe2 skill sync`↴](#aoe2-skill-sync)
+* [`aoe2 serve`↴](#aoe2-serve)
+* [`aoe2 url`↴](#aoe2-url)
+* [`aoe2 acp`↴](#aoe2-acp)
+* [`aoe2 acp doctor`↴](#aoe2-acp-doctor)
+* [`aoe2 acp agents`↴](#aoe2-acp-agents)
+* [`aoe2 acp stop`↴](#aoe2-acp-stop)
+* [`aoe2 acp kill`↴](#aoe2-acp-kill)
+* [`aoe2 acp logs`↴](#aoe2-acp-logs)
+* [`aoe2 acp restart`↴](#aoe2-acp-restart)
+* [`aoe2 acp history`↴](#aoe2-acp-history)
+* [`aoe2 acp status`↴](#aoe2-acp-status)
+* [`aoe2 acp prompt`↴](#aoe2-acp-prompt)
+* [`aoe2 acp approve`↴](#aoe2-acp-approve)
+* [`aoe2 acp cancel`↴](#aoe2-acp-cancel)
+* [`aoe2 acp tail`↴](#aoe2-acp-tail)
+* [`aoe2 acp attach`↴](#aoe2-acp-attach)
+* [`aoe2 acp switch-agent`↴](#aoe2-acp-switch-agent)
+* [`aoe2 uninstall`↴](#aoe2-uninstall)
+* [`aoe2 update`↴](#aoe2-update)
+* [`aoe2 migrate`↴](#aoe2-migrate)
+* [`aoe2 completion`↴](#aoe2-completion)
 
-## `aoe`
+## `aoe2`
 
-Agent of Empires (aoe) is a terminal session manager that uses tmux to help you manage and monitor AI coding agents like Claude Code and OpenCode.
+Agent of Empires 2 (aoe2) is a terminal session manager that uses tmux to help you manage and monitor AI coding agents like Claude Code and OpenCode.
 
 Run without arguments to launch the TUI dashboard.
 
-**Usage:** `aoe [OPTIONS] [COMMAND]`
+**Usage:** `aoe2 [OPTIONS] [COMMAND]`
 
 ###### **Subcommands:**
 
@@ -163,7 +164,7 @@ Run without arguments to launch the TUI dashboard.
 * `url` — Print the URL of a running `aoe serve` daemon
 * `acp` — Manage the ACP structured-view workers (doctor, ps, logs, prompt, approve, ...)
 * `uninstall` — Uninstall Agent of Empires
-* `update` — Update aoe to the latest release
+* `update` — Update aoe2 to the latest release
 * `migrate` — Run pending data migrations now, showing progress. A sandboxed session moves its own agent store when it starts; use this to move every eligible store at once instead. Trashed and archived sessions are skipped; each moves when it is started, or restore or unarchive it and run this again
 * `completion` — Generate shell completions
 
@@ -174,11 +175,11 @@ Run without arguments to launch the TUI dashboard.
 
 
 
-## `aoe add`
+## `aoe2 add`
 
 Add a new session
 
-**Usage:** `aoe add [OPTIONS] [PATH]`
+**Usage:** `aoe2 add [OPTIONS] [PATH]`
 
 ###### **Arguments:**
 
@@ -214,19 +215,19 @@ Add a new session
 
 
 
-## `aoe agents`
+## `aoe2 agents`
 
 List supported agents and their install status
 
-**Usage:** `aoe agents`
+**Usage:** `aoe2 agents`
 
 
 
-## `aoe init`
+## `aoe2 init`
 
 Initialize .agent-of-empires/config.toml in a repository
 
-**Usage:** `aoe init [PATH]`
+**Usage:** `aoe2 init [PATH]`
 
 ###### **Arguments:**
 
@@ -236,11 +237,11 @@ Initialize .agent-of-empires/config.toml in a repository
 
 
 
-## `aoe list`
+## `aoe2 list`
 
 List all sessions
 
-**Usage:** `aoe list [OPTIONS]`
+**Usage:** `aoe2 list [OPTIONS]`
 
 ###### **Options:**
 
@@ -261,11 +262,11 @@ List all sessions
 
 
 
-## `aoe ps`
+## `aoe2 ps`
 
 Show a substrate-agnostic runtime view of in-flight sessions (tmux agent panes and ACP structured-view workers), one row each
 
-**Usage:** `aoe ps [OPTIONS]`
+**Usage:** `aoe2 ps [OPTIONS]`
 
 ###### **Options:**
 
@@ -276,11 +277,11 @@ Show a substrate-agnostic runtime view of in-flight sessions (tmux agent panes a
 
 
 
-## `aoe logs`
+## `aoe2 logs`
 
 View the configured AoE log file with a pretty viewer
 
-**Usage:** `aoe logs [OPTIONS]`
+**Usage:** `aoe2 logs [OPTIONS]`
 
 ###### **Options:**
 
@@ -291,11 +292,11 @@ View the configured AoE log file with a pretty viewer
 
 
 
-## `aoe log-level`
+## `aoe2 log-level`
 
 Get or set the running daemon's log filter at runtime. Pass a bare level (debug/info/...) for the safe expansion, or `--filter <expr>` for raw EnvFilter syntax. `--get` prints the current filter. Changes are ephemeral and lost on daemon restart
 
-**Usage:** `aoe log-level [OPTIONS] [LEVEL]`
+**Usage:** `aoe2 log-level [OPTIONS] [LEVEL]`
 
 ###### **Arguments:**
 
@@ -308,11 +309,11 @@ Get or set the running daemon's log filter at runtime. Pass a bare level (debug/
 
 
 
-## `aoe remove`
+## `aoe2 remove`
 
 Remove a session
 
-**Usage:** `aoe remove [OPTIONS] <IDENTIFIER>`
+**Usage:** `aoe2 remove [OPTIONS] <IDENTIFIER>`
 
 ###### **Arguments:**
 
@@ -329,11 +330,11 @@ Remove a session
 
 
 
-## `aoe send`
+## `aoe2 send`
 
 Send a message to a running agent session
 
-**Usage:** `aoe send [OPTIONS] <IDENTIFIER> <MESSAGE>`
+**Usage:** `aoe2 send [OPTIONS] <IDENTIFIER> <MESSAGE>`
 
 ###### **Arguments:**
 
@@ -346,11 +347,11 @@ Send a message to a running agent session
 
 
 
-## `aoe status`
+## `aoe2 status`
 
 Show session status summary
 
-**Usage:** `aoe status [OPTIONS]`
+**Usage:** `aoe2 status [OPTIONS]`
 
 ###### **Options:**
 
@@ -360,11 +361,11 @@ Show session status summary
 
 
 
-## `aoe killall`
+## `aoe2 killall`
 
 Force-stop everything aoe is running: the serve daemon, all agent workers, and all aoe tmux sessions. Destructive and unprompted
 
-**Usage:** `aoe killall [OPTIONS]`
+**Usage:** `aoe2 killall [OPTIONS]`
 
 ###### **Options:**
 
@@ -375,11 +376,11 @@ Force-stop everything aoe is running: the serve daemon, all agent workers, and a
 
 
 
-## `aoe session`
+## `aoe2 session`
 
 Manage session lifecycle (start, stop, attach, etc.)
 
-**Usage:** `aoe session <COMMAND>`
+**Usage:** `aoe2 session <COMMAND>`
 
 ###### **Subcommands:**
 
@@ -404,16 +405,17 @@ Manage session lifecycle (start, stop, attach, etc.)
 * `unarchive` — Unarchive a session (restores it to its tier in the Attention sort)
 * `restore` — Restore a trashed session, returning it to its prior bucket with its transcript and metadata intact. See #2489
 * `import` — Import existing Claude Code sessions from disk. Scans the given path(s) (default: current directory) for Claude Code conversations whose working directory is at or under a path, and creates an AoE session for each: a terminal/tmux session that resumes the conversation with `claude --resume <id>` (default), or a structured-view session with `--structured`
+* `onboard` — Add an existing external Codex or Claude conversation, preserving its history
 * `list-trash` — List the sessions currently in the trash
 * `empty-trash` — Permanently purge every trashed session in the profile (irreversible)
 
 
 
-## `aoe session start`
+## `aoe2 session start`
 
 Start a session's tmux process
 
-**Usage:** `aoe session start <IDENTIFIER>`
+**Usage:** `aoe2 session start <IDENTIFIER>`
 
 ###### **Arguments:**
 
@@ -421,11 +423,11 @@ Start a session's tmux process
 
 
 
-## `aoe session stop`
+## `aoe2 session stop`
 
 Stop session process
 
-**Usage:** `aoe session stop <IDENTIFIER>`
+**Usage:** `aoe2 session stop <IDENTIFIER>`
 
 ###### **Arguments:**
 
@@ -433,11 +435,11 @@ Stop session process
 
 
 
-## `aoe session restart`
+## `aoe2 session restart`
 
 Restart session (or all sessions with `--all`)
 
-**Usage:** `aoe session restart [OPTIONS] [IDENTIFIER]`
+**Usage:** `aoe2 session restart [OPTIONS] [IDENTIFIER]`
 
 ###### **Arguments:**
 
@@ -452,11 +454,11 @@ Restart session (or all sessions with `--all`)
 
 
 
-## `aoe session attach`
+## `aoe2 session attach`
 
 Attach to session interactively
 
-**Usage:** `aoe session attach <IDENTIFIER>`
+**Usage:** `aoe2 session attach <IDENTIFIER>`
 
 ###### **Arguments:**
 
@@ -464,11 +466,11 @@ Attach to session interactively
 
 
 
-## `aoe session show`
+## `aoe2 session show`
 
 Show session details
 
-**Usage:** `aoe session show [OPTIONS] [IDENTIFIER]`
+**Usage:** `aoe2 session show [OPTIONS] [IDENTIFIER]`
 
 ###### **Arguments:**
 
@@ -480,11 +482,11 @@ Show session details
 
 
 
-## `aoe session rename`
+## `aoe2 session rename`
 
 Rename a session
 
-**Usage:** `aoe session rename [OPTIONS] [IDENTIFIER]`
+**Usage:** `aoe2 session rename [OPTIONS] [IDENTIFIER]`
 
 ###### **Arguments:**
 
@@ -498,11 +500,11 @@ Rename a session
 
 
 
-## `aoe session set-worktree-name`
+## `aoe2 session set-worktree-name`
 
 Edit a managed worktree session's workdir directory name (and, optionally, its git branch). Moves the worktree directory in place; the session must not be running. See #1723
 
-**Usage:** `aoe session set-worktree-name [OPTIONS] --name <NAME> [IDENTIFIER]`
+**Usage:** `aoe2 session set-worktree-name [OPTIONS] --name <NAME> [IDENTIFIER]`
 
 ###### **Arguments:**
 
@@ -515,11 +517,11 @@ Edit a managed worktree session's workdir directory name (and, optionally, its g
 
 
 
-## `aoe session capture`
+## `aoe2 session capture`
 
 Capture tmux pane output
 
-**Usage:** `aoe session capture [OPTIONS] [IDENTIFIER]`
+**Usage:** `aoe2 session capture [OPTIONS] [IDENTIFIER]`
 
 ###### **Arguments:**
 
@@ -535,11 +537,11 @@ Capture tmux pane output
 
 
 
-## `aoe session current`
+## `aoe2 session current`
 
 Auto-detect current session
 
-**Usage:** `aoe session current [OPTIONS]`
+**Usage:** `aoe2 session current [OPTIONS]`
 
 ###### **Options:**
 
@@ -548,11 +550,11 @@ Auto-detect current session
 
 
 
-## `aoe session add-project`
+## `aoe2 session add-project`
 
 Attach another repo to an existing session, so an agent that turns out to need a second repo can keep working in the same conversation instead of the session being recreated. Creates a worktree for the repo and restarts the agent so it can see it; the conversation is kept. See #3103
 
-**Usage:** `aoe session add-project [OPTIONS] <IDENTIFIER> <PROJECT>`
+**Usage:** `aoe2 session add-project [OPTIONS] <IDENTIFIER> <PROJECT>`
 
 ###### **Arguments:**
 
@@ -565,11 +567,11 @@ Attach another repo to an existing session, so an agent that turns out to need a
 
 
 
-## `aoe session set-session-id`
+## `aoe2 session set-session-id`
 
 Set the resume target for a session; agents with resume disabled in AoE store the ID but do not use it
 
-**Usage:** `aoe session set-session-id <IDENTIFIER> <SESSION_ID>`
+**Usage:** `aoe2 session set-session-id <IDENTIFIER> <SESSION_ID>`
 
 ###### **Arguments:**
 
@@ -578,11 +580,11 @@ Set the resume target for a session; agents with resume disabled in AoE store th
 
 
 
-## `aoe session set-base`
+## `aoe2 session set-base`
 
 Set or clear the per-session diff base branch. The diff view compares the worktree against this ref instead of the auto-detected default. Useful when the PR target differs from the project default (stacked PRs, hotfix off `release/*`, renamed default branch). See #970
 
-**Usage:** `aoe session set-base [OPTIONS] <IDENTIFIER> [BRANCH]`
+**Usage:** `aoe2 session set-base [OPTIONS] <IDENTIFIER> [BRANCH]`
 
 ###### **Arguments:**
 
@@ -596,11 +598,11 @@ Set or clear the per-session diff base branch. The diff view compares the worktr
 
 
 
-## `aoe session snooze`
+## `aoe2 session snooze`
 
 Snooze a session for a duration (temporary archive, auto wakes)
 
-**Usage:** `aoe session snooze [OPTIONS] <IDENTIFIER>`
+**Usage:** `aoe2 session snooze [OPTIONS] <IDENTIFIER>`
 
 ###### **Arguments:**
 
@@ -612,11 +614,11 @@ Snooze a session for a duration (temporary archive, auto wakes)
 
 
 
-## `aoe session unsnooze`
+## `aoe2 session unsnooze`
 
 Wake a snoozed session immediately
 
-**Usage:** `aoe session unsnooze <IDENTIFIER>`
+**Usage:** `aoe2 session unsnooze <IDENTIFIER>`
 
 ###### **Arguments:**
 
@@ -624,11 +626,11 @@ Wake a snoozed session immediately
 
 
 
-## `aoe session favorite`
+## `aoe2 session favorite`
 
 Mark a session as a favorite. With `session.favorites_first` on (the default), favorited rows pin to the top of their sibling scope in every sort order; with it off, they pin within their status tier in the Attention sort only. Either way the row renders with a leading `*` marker plus bold and underline wherever the pin applies. Snoozing a favorite suspends the pin until it wakes
 
-**Usage:** `aoe session favorite <IDENTIFIER>`
+**Usage:** `aoe2 session favorite <IDENTIFIER>`
 
 ###### **Arguments:**
 
@@ -636,11 +638,11 @@ Mark a session as a favorite. With `session.favorites_first` on (the default), f
 
 
 
-## `aoe session unfavorite`
+## `aoe2 session unfavorite`
 
 Clear the favorite flag on a session
 
-**Usage:** `aoe session unfavorite <IDENTIFIER>`
+**Usage:** `aoe2 session unfavorite <IDENTIFIER>`
 
 ###### **Arguments:**
 
@@ -648,11 +650,11 @@ Clear the favorite flag on a session
 
 
 
-## `aoe session color`
+## `aoe2 session color`
 
 Set (or clear) a per-session color label, rendered as a colored dot in the web sidebar for at-a-glance status signaling. Intended for a running agent to flag its own state, e.g. `aoe session color $(aoe session current -q) red`. Colors: `red` (needs attention), `amber` (working), `green` (done); `none` clears it
 
-**Usage:** `aoe session color <IDENTIFIER> <COLOR>`
+**Usage:** `aoe2 session color <IDENTIFIER> <COLOR>`
 
 ###### **Arguments:**
 
@@ -661,11 +663,11 @@ Set (or clear) a per-session color label, rendered as a colored dot in the web s
 
 
 
-## `aoe session archive`
+## `aoe2 session archive`
 
 Archive a session: sink it in the Attention sort and tear down its tmux sessions. Worktree, branch, container preserved. `--no-kill` skips tmux teardown. See #1868
 
-**Usage:** `aoe session archive [OPTIONS] <IDENTIFIER>`
+**Usage:** `aoe2 session archive [OPTIONS] <IDENTIFIER>`
 
 ###### **Arguments:**
 
@@ -677,11 +679,11 @@ Archive a session: sink it in the Attention sort and tear down its tmux sessions
 
 
 
-## `aoe session unarchive`
+## `aoe2 session unarchive`
 
 Unarchive a session (restores it to its tier in the Attention sort)
 
-**Usage:** `aoe session unarchive <IDENTIFIER>`
+**Usage:** `aoe2 session unarchive <IDENTIFIER>`
 
 ###### **Arguments:**
 
@@ -689,11 +691,11 @@ Unarchive a session (restores it to its tier in the Attention sort)
 
 
 
-## `aoe session restore`
+## `aoe2 session restore`
 
 Restore a trashed session, returning it to its prior bucket with its transcript and metadata intact. See #2489
 
-**Usage:** `aoe session restore <IDENTIFIER>`
+**Usage:** `aoe2 session restore <IDENTIFIER>`
 
 ###### **Arguments:**
 
@@ -701,11 +703,11 @@ Restore a trashed session, returning it to its prior bucket with its transcript 
 
 
 
-## `aoe session import`
+## `aoe2 session import`
 
 Import existing Claude Code sessions from disk. Scans the given path(s) (default: current directory) for Claude Code conversations whose working directory is at or under a path, and creates an AoE session for each: a terminal/tmux session that resumes the conversation with `claude --resume <id>` (default), or a structured-view session with `--structured`
 
-**Usage:** `aoe session import [OPTIONS] [PATHS]...`
+**Usage:** `aoe2 session import [OPTIONS] [PATHS]...`
 
 ###### **Arguments:**
 
@@ -722,27 +724,55 @@ Import existing Claude Code sessions from disk. Scans the given path(s) (default
 
 
 
-## `aoe session list-trash`
+## `aoe2 session onboard`
+
+Add an existing external Codex or Claude conversation, preserving its history
+
+**Usage:** `aoe2 session onboard [OPTIONS] [SESSION_ID]`
+
+**Command Alias:** `adopt`
+
+###### **Arguments:**
+
+* `<SESSION_ID>` — Exact native conversation ID. Use --list to discover IDs
+
+###### **Options:**
+
+* `--agent <AGENT>` — Agent that owns the conversation
+
+  Default value: `codex`
+
+  Possible values: `codex`, `claude`
+
+* `--list` — List conversations available to onboard without changing anything
+* `--title <TITLE>` — Title for the new AoE session
+* `--group <GROUP>` — Place the session in this AoE group
+* `--launch` — Immediately resume in AoE. Close the external agent first
+* `--json` — Output the discovered conversations or created session as JSON
+
+
+
+## `aoe2 session list-trash`
 
 List the sessions currently in the trash
 
-**Usage:** `aoe session list-trash`
+**Usage:** `aoe2 session list-trash`
 
 
 
-## `aoe session empty-trash`
+## `aoe2 session empty-trash`
 
 Permanently purge every trashed session in the profile (irreversible)
 
-**Usage:** `aoe session empty-trash`
+**Usage:** `aoe2 session empty-trash`
 
 
 
-## `aoe group`
+## `aoe2 group`
 
 Manage groups for organizing sessions
 
-**Usage:** `aoe group <COMMAND>`
+**Usage:** `aoe2 group <COMMAND>`
 
 ###### **Subcommands:**
 
@@ -753,11 +783,11 @@ Manage groups for organizing sessions
 
 
 
-## `aoe group list`
+## `aoe2 group list`
 
 List all groups
 
-**Usage:** `aoe group list [OPTIONS]`
+**Usage:** `aoe2 group list [OPTIONS]`
 
 ###### **Options:**
 
@@ -765,11 +795,11 @@ List all groups
 
 
 
-## `aoe group create`
+## `aoe2 group create`
 
 Create a new group
 
-**Usage:** `aoe group create [OPTIONS] <NAME>`
+**Usage:** `aoe2 group create [OPTIONS] <NAME>`
 
 ###### **Arguments:**
 
@@ -781,11 +811,11 @@ Create a new group
 
 
 
-## `aoe group delete`
+## `aoe2 group delete`
 
 Delete a group
 
-**Usage:** `aoe group delete [OPTIONS] <NAME>`
+**Usage:** `aoe2 group delete [OPTIONS] <NAME>`
 
 ###### **Arguments:**
 
@@ -797,11 +827,11 @@ Delete a group
 
 
 
-## `aoe group move`
+## `aoe2 group move`
 
 Move session to group
 
-**Usage:** `aoe group move <IDENTIFIER> <GROUP>`
+**Usage:** `aoe2 group move <IDENTIFIER> <GROUP>`
 
 ###### **Arguments:**
 
@@ -810,11 +840,11 @@ Move session to group
 
 
 
-## `aoe plugin`
+## `aoe2 plugin`
 
 Manage plugins (list, info, enable, disable, install, update, uninstall)
 
-**Usage:** `aoe plugin <COMMAND>`
+**Usage:** `aoe2 plugin <COMMAND>`
 
 ###### **Subcommands:**
 
@@ -831,19 +861,19 @@ Manage plugins (list, info, enable, disable, install, update, uninstall)
 
 
 
-## `aoe plugin list`
+## `aoe2 plugin list`
 
 List every known plugin with version, validation, and state
 
-**Usage:** `aoe plugin list`
+**Usage:** `aoe2 plugin list`
 
 
 
-## `aoe plugin info`
+## `aoe2 plugin info`
 
 Show one plugin's manifest details
 
-**Usage:** `aoe plugin info <ID>`
+**Usage:** `aoe2 plugin info <ID>`
 
 ###### **Arguments:**
 
@@ -851,11 +881,11 @@ Show one plugin's manifest details
 
 
 
-## `aoe plugin enable`
+## `aoe2 plugin enable`
 
 Enable a plugin's contributions
 
-**Usage:** `aoe plugin enable <ID>`
+**Usage:** `aoe2 plugin enable <ID>`
 
 ###### **Arguments:**
 
@@ -863,11 +893,11 @@ Enable a plugin's contributions
 
 
 
-## `aoe plugin disable`
+## `aoe2 plugin disable`
 
 Disable a plugin; its settings stay on disk for re-enabling
 
-**Usage:** `aoe plugin disable <ID>`
+**Usage:** `aoe2 plugin disable <ID>`
 
 ###### **Arguments:**
 
@@ -875,11 +905,11 @@ Disable a plugin; its settings stay on disk for re-enabling
 
 
 
-## `aoe plugin install`
+## `aoe2 plugin install`
 
 Install an external plugin from a `gh:owner/repo[@ref]` slug or a local directory. With no `@ref`, installs the repo's latest release; an explicit `@ref` installs unverified, un-audited code. Community plugins run at your own risk
 
-**Usage:** `aoe plugin install [OPTIONS] <SOURCE>`
+**Usage:** `aoe2 plugin install [OPTIONS] <SOURCE>`
 
 ###### **Arguments:**
 
@@ -891,11 +921,11 @@ Install an external plugin from a `gh:owner/repo[@ref]` slug or a local director
 
 
 
-## `aoe plugin update`
+## `aoe2 plugin update`
 
 Update an installed external plugin from its recorded source. Prompts to re-approve capabilities if the update changes the capability set
 
-**Usage:** `aoe plugin update <ID>`
+**Usage:** `aoe2 plugin update <ID>`
 
 ###### **Arguments:**
 
@@ -903,11 +933,11 @@ Update an installed external plugin from its recorded source. Prompts to re-appr
 
 
 
-## `aoe plugin uninstall`
+## `aoe2 plugin uninstall`
 
 Uninstall an external plugin, removing its files and capability grant
 
-**Usage:** `aoe plugin uninstall <ID>`
+**Usage:** `aoe2 plugin uninstall <ID>`
 
 ###### **Arguments:**
 
@@ -915,11 +945,11 @@ Uninstall an external plugin, removing its files and capability grant
 
 
 
-## `aoe plugin hash`
+## `aoe2 plugin hash`
 
 Print the deterministic source tree hash for a plugin directory, the value a maintainer pins in the featured index
 
-**Usage:** `aoe plugin hash <PATH>`
+**Usage:** `aoe2 plugin hash <PATH>`
 
 ###### **Arguments:**
 
@@ -927,11 +957,11 @@ Print the deterministic source tree hash for a plugin directory, the value a mai
 
 
 
-## `aoe plugin discover`
+## `aoe2 plugin discover`
 
 Search GitHub's `aoe-plugin` topic for installable plugins
 
-**Usage:** `aoe plugin discover [QUERY]`
+**Usage:** `aoe2 plugin discover [QUERY]`
 
 ###### **Arguments:**
 
@@ -939,19 +969,19 @@ Search GitHub's `aoe-plugin` topic for installable plugins
 
 
 
-## `aoe plugin outdated`
+## `aoe2 plugin outdated`
 
 List installed external plugins that have an update available
 
-**Usage:** `aoe plugin outdated`
+**Usage:** `aoe2 plugin outdated`
 
 
 
-## `aoe profile`
+## `aoe2 profile`
 
 Manage profiles (separate workspaces)
 
-**Usage:** `aoe profile [COMMAND]`
+**Usage:** `aoe2 profile [COMMAND]`
 
 ###### **Subcommands:**
 
@@ -964,19 +994,19 @@ Manage profiles (separate workspaces)
 
 
 
-## `aoe profile list`
+## `aoe2 profile list`
 
 List all profiles
 
-**Usage:** `aoe profile list`
+**Usage:** `aoe2 profile list`
 
 
 
-## `aoe profile create`
+## `aoe2 profile create`
 
 Create a new profile
 
-**Usage:** `aoe profile create <NAME>`
+**Usage:** `aoe2 profile create <NAME>`
 
 ###### **Arguments:**
 
@@ -984,11 +1014,11 @@ Create a new profile
 
 
 
-## `aoe profile delete`
+## `aoe2 profile delete`
 
 Delete a profile
 
-**Usage:** `aoe profile delete <NAME>`
+**Usage:** `aoe2 profile delete <NAME>`
 
 ###### **Arguments:**
 
@@ -996,11 +1026,11 @@ Delete a profile
 
 
 
-## `aoe profile rename`
+## `aoe2 profile rename`
 
 Rename a profile
 
-**Usage:** `aoe profile rename <OLD_NAME> <NEW_NAME>`
+**Usage:** `aoe2 profile rename <OLD_NAME> <NEW_NAME>`
 
 ###### **Arguments:**
 
@@ -1009,11 +1039,11 @@ Rename a profile
 
 
 
-## `aoe profile default`
+## `aoe2 profile default`
 
 Show or set default profile
 
-**Usage:** `aoe profile default [NAME]`
+**Usage:** `aoe2 profile default [NAME]`
 
 ###### **Arguments:**
 
@@ -1021,11 +1051,11 @@ Show or set default profile
 
 
 
-## `aoe profile show`
+## `aoe2 profile show`
 
 Show profile-derived values for scripts
 
-**Usage:** `aoe profile show [OPTIONS]`
+**Usage:** `aoe2 profile show [OPTIONS]`
 
 ###### **Options:**
 
@@ -1034,11 +1064,11 @@ Show profile-derived values for scripts
 
 
 
-## `aoe project`
+## `aoe2 project`
 
 Manage the project registry used by multi-repo session pickers
 
-**Usage:** `aoe project <COMMAND>`
+**Usage:** `aoe2 project <COMMAND>`
 
 ###### **Subcommands:**
 
@@ -1048,11 +1078,11 @@ Manage the project registry used by multi-repo session pickers
 
 
 
-## `aoe project list`
+## `aoe2 project list`
 
 List registered projects
 
-**Usage:** `aoe project list [OPTIONS]`
+**Usage:** `aoe2 project list [OPTIONS]`
 
 ###### **Options:**
 
@@ -1066,11 +1096,11 @@ List registered projects
 
 
 
-## `aoe project add`
+## `aoe2 project add`
 
 Add a project to the registry
 
-**Usage:** `aoe project add [OPTIONS] <PATH>`
+**Usage:** `aoe2 project add [OPTIONS] <PATH>`
 
 ###### **Arguments:**
 
@@ -1088,11 +1118,11 @@ Add a project to the registry
 
 
 
-## `aoe project remove`
+## `aoe2 project remove`
 
 Remove a project from the registry
 
-**Usage:** `aoe project remove [OPTIONS] <NAME_OR_PATH>`
+**Usage:** `aoe2 project remove [OPTIONS] <NAME_OR_PATH>`
 
 ###### **Arguments:**
 
@@ -1107,11 +1137,11 @@ Remove a project from the registry
 
 
 
-## `aoe worktree`
+## `aoe2 worktree`
 
 Manage git worktrees for parallel development
 
-**Usage:** `aoe worktree <COMMAND>`
+**Usage:** `aoe2 worktree <COMMAND>`
 
 ###### **Subcommands:**
 
@@ -1121,19 +1151,19 @@ Manage git worktrees for parallel development
 
 
 
-## `aoe worktree list`
+## `aoe2 worktree list`
 
 List all worktrees in current repository
 
-**Usage:** `aoe worktree list`
+**Usage:** `aoe2 worktree list`
 
 
 
-## `aoe worktree info`
+## `aoe2 worktree info`
 
 Show worktree information for a session
 
-**Usage:** `aoe worktree info <IDENTIFIER>`
+**Usage:** `aoe2 worktree info <IDENTIFIER>`
 
 ###### **Arguments:**
 
@@ -1141,11 +1171,11 @@ Show worktree information for a session
 
 
 
-## `aoe worktree cleanup`
+## `aoe2 worktree cleanup`
 
 Cleanup orphaned worktrees
 
-**Usage:** `aoe worktree cleanup [OPTIONS]`
+**Usage:** `aoe2 worktree cleanup [OPTIONS]`
 
 ###### **Options:**
 
@@ -1153,11 +1183,11 @@ Cleanup orphaned worktrees
 
 
 
-## `aoe tmux`
+## `aoe2 tmux`
 
 tmux integration utilities
 
-**Usage:** `aoe tmux <COMMAND>`
+**Usage:** `aoe2 tmux <COMMAND>`
 
 ###### **Subcommands:**
 
@@ -1165,13 +1195,13 @@ tmux integration utilities
 
 
 
-## `aoe tmux status`
+## `aoe2 tmux status`
 
 Output session info for use in custom tmux status bar
 
 Add this to your ~/.tmux.conf: set -g status-right "#(aoe tmux status)"
 
-**Usage:** `aoe tmux status [OPTIONS]`
+**Usage:** `aoe2 tmux status [OPTIONS]`
 
 ###### **Options:**
 
@@ -1181,11 +1211,11 @@ Add this to your ~/.tmux.conf: set -g status-right "#(aoe tmux status)"
 
 
 
-## `aoe sounds`
+## `aoe2 sounds`
 
 Manage sound effects for agent state transitions
 
-**Usage:** `aoe sounds <COMMAND>`
+**Usage:** `aoe2 sounds <COMMAND>`
 
 ###### **Subcommands:**
 
@@ -1195,27 +1225,27 @@ Manage sound effects for agent state transitions
 
 
 
-## `aoe sounds install`
+## `aoe2 sounds install`
 
 Install bundled sound effects
 
-**Usage:** `aoe sounds install`
+**Usage:** `aoe2 sounds install`
 
 
 
-## `aoe sounds list`
+## `aoe2 sounds list`
 
 List currently installed sounds
 
-**Usage:** `aoe sounds list`
+**Usage:** `aoe2 sounds list`
 
 
 
-## `aoe sounds test`
+## `aoe2 sounds test`
 
 Test a sound by playing it
 
-**Usage:** `aoe sounds test <NAME>`
+**Usage:** `aoe2 sounds test <NAME>`
 
 ###### **Arguments:**
 
@@ -1223,11 +1253,11 @@ Test a sound by playing it
 
 
 
-## `aoe theme`
+## `aoe2 theme`
 
 Manage color themes (list, export, customize)
 
-**Usage:** `aoe theme <COMMAND>`
+**Usage:** `aoe2 theme <COMMAND>`
 
 ###### **Subcommands:**
 
@@ -1237,19 +1267,19 @@ Manage color themes (list, export, customize)
 
 
 
-## `aoe theme list`
+## `aoe2 theme list`
 
 List all available themes (built-in and custom)
 
-**Usage:** `aoe theme list`
+**Usage:** `aoe2 theme list`
 
 
 
-## `aoe theme export`
+## `aoe2 theme export`
 
 Export a built-in theme as a TOML file for customization
 
-**Usage:** `aoe theme export [OPTIONS] <NAME>`
+**Usage:** `aoe2 theme export [OPTIONS] <NAME>`
 
 ###### **Arguments:**
 
@@ -1261,19 +1291,19 @@ Export a built-in theme as a TOML file for customization
 
 
 
-## `aoe theme dir`
+## `aoe2 theme dir`
 
 Show the custom themes directory path
 
-**Usage:** `aoe theme dir`
+**Usage:** `aoe2 theme dir`
 
 
 
-## `aoe settings`
+## `aoe2 settings`
 
 Inspect resolved settings and their provenance
 
-**Usage:** `aoe settings <COMMAND>`
+**Usage:** `aoe2 settings <COMMAND>`
 
 ###### **Subcommands:**
 
@@ -1281,11 +1311,11 @@ Inspect resolved settings and their provenance
 
 
 
-## `aoe settings explain`
+## `aoe2 settings explain`
 
 Explain where a setting's effective value comes from. KEY is a core `section.field` (e.g. `acp.default_agent`) or a plugin `plugin:<id>.<field>` (e.g. `plugin:acme.kit.retries`)
 
-**Usage:** `aoe settings explain <KEY>`
+**Usage:** `aoe2 settings explain <KEY>`
 
 ###### **Arguments:**
 
@@ -1293,11 +1323,11 @@ Explain where a setting's effective value comes from. KEY is a core `section.fie
 
 
 
-## `aoe cityhall`
+## `aoe2 cityhall`
 
 Export and apply the CityHall config bundle (settings + projects)
 
-**Usage:** `aoe cityhall <COMMAND>`
+**Usage:** `aoe2 cityhall <COMMAND>`
 
 ###### **Subcommands:**
 
@@ -1306,11 +1336,11 @@ Export and apply the CityHall config bundle (settings + projects)
 
 
 
-## `aoe cityhall export`
+## `aoe2 cityhall export`
 
 Write a bundle describing this install's settings and projects
 
-**Usage:** `aoe cityhall export [OPTIONS]`
+**Usage:** `aoe2 cityhall export [OPTIONS]`
 
 ###### **Options:**
 
@@ -1318,11 +1348,11 @@ Write a bundle describing this install's settings and projects
 
 
 
-## `aoe cityhall apply`
+## `aoe2 cityhall apply`
 
 Apply a bundle to this install (merge settings, clone and register projects, install the git identity)
 
-**Usage:** `aoe cityhall apply <FILE>`
+**Usage:** `aoe2 cityhall apply <FILE>`
 
 ###### **Arguments:**
 
@@ -1330,11 +1360,11 @@ Apply a bundle to this install (merge settings, clone and register projects, ins
 
 
 
-## `aoe telemetry`
+## `aoe2 telemetry`
 
 Manage anonymous opt-in usage telemetry
 
-**Usage:** `aoe telemetry <COMMAND>`
+**Usage:** `aoe2 telemetry <COMMAND>`
 
 ###### **Subcommands:**
 
@@ -1345,43 +1375,43 @@ Manage anonymous opt-in usage telemetry
 
 
 
-## `aoe telemetry status`
+## `aoe2 telemetry status`
 
 Show the current telemetry opt-in state and install id
 
-**Usage:** `aoe telemetry status`
+**Usage:** `aoe2 telemetry status`
 
 
 
-## `aoe telemetry enable`
+## `aoe2 telemetry enable`
 
 Opt in to anonymous usage telemetry
 
-**Usage:** `aoe telemetry enable`
+**Usage:** `aoe2 telemetry enable`
 
 
 
-## `aoe telemetry disable`
+## `aoe2 telemetry disable`
 
 Opt out of telemetry (deletes the local install id)
 
-**Usage:** `aoe telemetry disable`
+**Usage:** `aoe2 telemetry disable`
 
 
 
-## `aoe telemetry reset-id`
+## `aoe2 telemetry reset-id`
 
 Generate a fresh anonymous install id (only while opted in)
 
-**Usage:** `aoe telemetry reset-id`
+**Usage:** `aoe2 telemetry reset-id`
 
 
 
-## `aoe mcp`
+## `aoe2 mcp`
 
 Inspect MCP configuration or serve agent orchestration tools
 
-**Usage:** `aoe mcp <COMMAND>`
+**Usage:** `aoe2 mcp <COMMAND>`
 
 ###### **Subcommands:**
 
@@ -1390,25 +1420,26 @@ Inspect MCP configuration or serve agent orchestration tools
 
 
 
-## `aoe mcp serve`
+## `aoe2 mcp serve`
 
 Expose agent creation, messaging, queues, and output over MCP stdio
 
-**Usage:** `aoe mcp serve [OPTIONS]`
+**Usage:** `aoe2 mcp serve [OPTIONS]`
 
 ###### **Options:**
 
 * `--url <URL>` — Running AoE daemon URL. Pass its token through AOE_DAEMON_TOKEN
 
   Default value: `http://127.0.0.1:8080`
+* `--dry-mode` — Skip every AoE tool call, returning an explicit dry-mode result
 
 
 
-## `aoe mcp list`
+## `aoe2 mcp list`
 
 List the merged effective MCP server set with provenance, plus any conflicts and servers kept after removal from a native config
 
-**Usage:** `aoe mcp list [OPTIONS]`
+**Usage:** `aoe2 mcp list [OPTIONS]`
 
 ###### **Options:**
 
@@ -1417,11 +1448,11 @@ List the merged effective MCP server set with provenance, plus any conflicts and
 
 
 
-## `aoe skill`
+## `aoe2 skill`
 
 Query and manage agent skills
 
-**Usage:** `aoe skill <COMMAND>`
+**Usage:** `aoe2 skill <COMMAND>`
 
 ###### **Subcommands:**
 
@@ -1435,11 +1466,11 @@ Query and manage agent skills
 
 
 
-## `aoe skill list`
+## `aoe2 skill list`
 
 List discovered skills and their source roots
 
-**Usage:** `aoe skill list [OPTIONS]`
+**Usage:** `aoe2 skill list [OPTIONS]`
 
 ###### **Options:**
 
@@ -1447,11 +1478,11 @@ List discovered skills and their source roots
 
 
 
-## `aoe skill view`
+## `aoe2 skill view`
 
 Print one skill's SKILL.md
 
-**Usage:** `aoe skill view [OPTIONS] <DIRECTORY>`
+**Usage:** `aoe2 skill view [OPTIONS] <DIRECTORY>`
 
 ###### **Arguments:**
 
@@ -1466,11 +1497,11 @@ Print one skill's SKILL.md
 
 
 
-## `aoe skill add`
+## `aoe2 skill add`
 
 Create a new AoE-managed skill
 
-**Usage:** `aoe skill add [OPTIONS] <DIRECTORY>`
+**Usage:** `aoe2 skill add [OPTIONS] <DIRECTORY>`
 
 ###### **Arguments:**
 
@@ -1482,11 +1513,11 @@ Create a new AoE-managed skill
 
 
 
-## `aoe skill edit`
+## `aoe2 skill edit`
 
 Edit an AoE-managed skill
 
-**Usage:** `aoe skill edit [OPTIONS] <DIRECTORY>`
+**Usage:** `aoe2 skill edit [OPTIONS] <DIRECTORY>`
 
 ###### **Arguments:**
 
@@ -1498,11 +1529,11 @@ Edit an AoE-managed skill
 
 
 
-## `aoe skill adopt`
+## `aoe2 skill adopt`
 
 Copy an external skill into AoE's managed store
 
-**Usage:** `aoe skill adopt [OPTIONS] <SOURCE> <DIRECTORY>`
+**Usage:** `aoe2 skill adopt [OPTIONS] <SOURCE> <DIRECTORY>`
 
 ###### **Arguments:**
 
@@ -1515,11 +1546,11 @@ Copy an external skill into AoE's managed store
 
 
 
-## `aoe skill remove`
+## `aoe2 skill remove`
 
 Delete an AoE-managed skill
 
-**Usage:** `aoe skill remove <DIRECTORY>`
+**Usage:** `aoe2 skill remove <DIRECTORY>`
 
 ###### **Arguments:**
 
@@ -1527,11 +1558,11 @@ Delete an AoE-managed skill
 
 
 
-## `aoe skill sync`
+## `aoe2 skill sync`
 
 Copy AoE-managed skills into the agents' own skills directories
 
-**Usage:** `aoe skill sync [OPTIONS]`
+**Usage:** `aoe2 skill sync [OPTIONS]`
 
 ###### **Options:**
 
@@ -1542,11 +1573,11 @@ Copy AoE-managed skills into the agents' own skills directories
 
 
 
-## `aoe serve`
+## `aoe2 serve`
 
 Start the aoe daemon: REST/WebSocket API, plus the web dashboard in builds that embed it
 
-**Usage:** `aoe serve [OPTIONS]`
+**Usage:** `aoe2 serve [OPTIONS]`
 
 ###### **Options:**
 
@@ -1579,11 +1610,11 @@ Start the aoe daemon: REST/WebSocket API, plus the web dashboard in builds that 
 
 
 
-## `aoe url`
+## `aoe2 url`
 
 Print the URL of a running `aoe serve` daemon
 
-**Usage:** `aoe url [OPTIONS]`
+**Usage:** `aoe2 url [OPTIONS]`
 
 ###### **Options:**
 
@@ -1592,11 +1623,11 @@ Print the URL of a running `aoe serve` daemon
 
 
 
-## `aoe acp`
+## `aoe2 acp`
 
 Manage the ACP structured-view workers (doctor, ps, logs, prompt, approve, ...)
 
-**Usage:** `aoe acp <COMMAND>`
+**Usage:** `aoe2 acp <COMMAND>`
 
 ###### **Subcommands:**
 
@@ -1617,11 +1648,11 @@ Manage the ACP structured-view workers (doctor, ps, logs, prompt, approve, ...)
 
 
 
-## `aoe acp doctor`
+## `aoe2 acp doctor`
 
 Verify the structured view can start: Node runtime, configured agents, provider auth (claude login)
 
-**Usage:** `aoe acp doctor [OPTIONS]`
+**Usage:** `aoe2 acp doctor [OPTIONS]`
 
 ###### **Options:**
 
@@ -1635,19 +1666,19 @@ Verify the structured view can start: Node runtime, configured agents, provider 
 
 
 
-## `aoe acp agents`
+## `aoe2 acp agents`
 
 List configured agents (claude-code, aoe-agent, etc.)
 
-**Usage:** `aoe acp agents`
+**Usage:** `aoe2 acp agents`
 
 
 
-## `aoe acp stop`
+## `aoe2 acp stop`
 
 Gracefully stop an agent worker (SIGTERM the runner, agent receives stdin EOF). Sessions can be reattached on the next `aoe serve` only if they are still alive afterward; `stop` destroys the worker
 
-**Usage:** `aoe acp stop [OPTIONS] [SESSION]`
+**Usage:** `aoe2 acp stop [OPTIONS] [SESSION]`
 
 ###### **Arguments:**
 
@@ -1662,11 +1693,11 @@ Gracefully stop an agent worker (SIGTERM the runner, agent receives stdin EOF). 
 
 
 
-## `aoe acp kill`
+## `aoe2 acp kill`
 
 SIGKILL a worker immediately (use when `stop` doesn't take)
 
-**Usage:** `aoe acp kill <SESSION>`
+**Usage:** `aoe2 acp kill <SESSION>`
 
 ###### **Arguments:**
 
@@ -1674,11 +1705,11 @@ SIGKILL a worker immediately (use when `stop` doesn't take)
 
 
 
-## `aoe acp logs`
+## `aoe2 acp logs`
 
 Tail the runner's log file for an agent session
 
-**Usage:** `aoe acp logs [OPTIONS]`
+**Usage:** `aoe2 acp logs [OPTIONS]`
 
 ###### **Options:**
 
@@ -1687,11 +1718,11 @@ Tail the runner's log file for an agent session
 
 
 
-## `aoe acp restart`
+## `aoe2 acp restart`
 
 Restart a wedged agent worker: stop the existing runner, then let the daemon's reconciler spawn a fresh one on the next tick
 
-**Usage:** `aoe acp restart <SESSION>`
+**Usage:** `aoe2 acp restart <SESSION>`
 
 ###### **Arguments:**
 
@@ -1699,11 +1730,11 @@ Restart a wedged agent worker: stop the existing runner, then let the daemon's r
 
 
 
-## `aoe acp history`
+## `aoe2 acp history`
 
 Print the persisted transcript for an agent session
 
-**Usage:** `aoe acp history [OPTIONS] <SESSION>`
+**Usage:** `aoe2 acp history [OPTIONS] <SESSION>`
 
 ###### **Arguments:**
 
@@ -1718,11 +1749,11 @@ Print the persisted transcript for an agent session
 
 
 
-## `aoe acp status`
+## `aoe2 acp status`
 
 Print live status for an agent session: highest/lowest seq, and whether the on-disk retention window has truncated history
 
-**Usage:** `aoe acp status [OPTIONS] <SESSION>`
+**Usage:** `aoe2 acp status [OPTIONS] <SESSION>`
 
 ###### **Arguments:**
 
@@ -1734,11 +1765,11 @@ Print live status for an agent session: highest/lowest seq, and whether the on-d
 
 
 
-## `aoe acp prompt`
+## `aoe2 acp prompt`
 
 Send a prompt to an agent session's agent
 
-**Usage:** `aoe acp prompt <SESSION> <TEXT>`
+**Usage:** `aoe2 acp prompt <SESSION> <TEXT>`
 
 ###### **Arguments:**
 
@@ -1747,11 +1778,11 @@ Send a prompt to an agent session's agent
 
 
 
-## `aoe acp approve`
+## `aoe2 acp approve`
 
 Resolve a pending approval (default: allow). Use --always for a session-scoped allow-list entry, --deny to refuse the request
 
-**Usage:** `aoe acp approve [OPTIONS] <SESSION> <NONCE>`
+**Usage:** `aoe2 acp approve [OPTIONS] <SESSION> <NONCE>`
 
 ###### **Arguments:**
 
@@ -1765,11 +1796,11 @@ Resolve a pending approval (default: allow). Use --always for a session-scoped a
 
 
 
-## `aoe acp cancel`
+## `aoe2 acp cancel`
 
 Cancel the in-flight prompt for an agent session
 
-**Usage:** `aoe acp cancel <SESSION>`
+**Usage:** `aoe2 acp cancel <SESSION>`
 
 ###### **Arguments:**
 
@@ -1777,11 +1808,11 @@ Cancel the in-flight prompt for an agent session
 
 
 
-## `aoe acp tail`
+## `aoe2 acp tail`
 
 Stream the agent broadcast for a session to stdout as JSON lines (one frame per line). Press Ctrl-C to stop
 
-**Usage:** `aoe acp tail [OPTIONS] <SESSION>`
+**Usage:** `aoe2 acp tail [OPTIONS] <SESSION>`
 
 ###### **Arguments:**
 
@@ -1795,11 +1826,11 @@ Stream the agent broadcast for a session to stdout as JSON lines (one frame per 
 
 
 
-## `aoe acp attach`
+## `aoe2 acp attach`
 
 Open the TUI structured view directly for a known session id. Combine with `AOE_DAEMON_URL` (+ `AOE_DAEMON_TOKEN`) to attach across machines without going through the home session list
 
-**Usage:** `aoe acp attach <SESSION>`
+**Usage:** `aoe2 acp attach <SESSION>`
 
 ###### **Arguments:**
 
@@ -1807,11 +1838,11 @@ Open the TUI structured view directly for a known session id. Combine with `AOE_
 
 
 
-## `aoe acp switch-agent`
+## `aoe2 acp switch-agent`
 
 Switch an agent session to a different ACP agent, keeping the transcript. Valid targets are built-in registry agents and any custom agent configured in `[session.agent_acp_cmd]`. The new agent starts fresh; use `aoe acp agents` to list built-in targets. Handy for returning to claude after a rate-limit handoff to codex
 
-**Usage:** `aoe acp switch-agent [OPTIONS] <SESSION> <TARGET>`
+**Usage:** `aoe2 acp switch-agent [OPTIONS] <SESSION> <TARGET>`
 
 ###### **Arguments:**
 
@@ -1824,11 +1855,11 @@ Switch an agent session to a different ACP agent, keeping the transcript. Valid 
 
 
 
-## `aoe uninstall`
+## `aoe2 uninstall`
 
 Uninstall Agent of Empires
 
-**Usage:** `aoe uninstall [OPTIONS]`
+**Usage:** `aoe2 uninstall [OPTIONS]`
 
 ###### **Options:**
 
@@ -1839,11 +1870,11 @@ Uninstall Agent of Empires
 
 
 
-## `aoe update`
+## `aoe2 update`
 
-Update aoe to the latest release
+Update aoe2 to the latest release
 
-**Usage:** `aoe update [OPTIONS]`
+**Usage:** `aoe2 update [OPTIONS]`
 
 ###### **Options:**
 
@@ -1853,19 +1884,19 @@ Update aoe to the latest release
 
 
 
-## `aoe migrate`
+## `aoe2 migrate`
 
 Run pending data migrations now, showing progress. A sandboxed session moves its own agent store when it starts; use this to move every eligible store at once instead. Trashed and archived sessions are skipped; each moves when it is started, or restore or unarchive it and run this again
 
-**Usage:** `aoe migrate`
+**Usage:** `aoe2 migrate`
 
 
 
-## `aoe completion`
+## `aoe2 completion`
 
 Generate shell completions
 
-**Usage:** `aoe completion <SHELL>`
+**Usage:** `aoe2 completion <SHELL>`
 
 ###### **Arguments:**
 

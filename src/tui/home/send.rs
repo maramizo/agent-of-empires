@@ -62,7 +62,7 @@ impl HomeView {
 
     /// Run the send-message work after the dialog has been dismissed: call
     /// `ensure_pane_ready` (which may auto-start or respawn), then deliver
-    /// the keystrokes. Errors are surfaced via `info_dialog` so the caller
+    /// the prompt. Errors are surfaced via `info_dialog` so the caller
     /// (`execute_action`) only has to clear its transient status.
     ///
     pub fn execute_send_message(&mut self, session_id: &str, message: &str) {
@@ -159,16 +159,12 @@ impl HomeView {
                 crate::tmux::ToolSession::new(&inst.id, &inst.title, name).session_name(),
             ),
         };
-        // Agent gets a tool-specific Enter delay so paste-burst-aware
-        // agents (e.g. Codex) don't swallow the final Enter. Shells in
-        // the paired terminal panes don't need the delay.
-        let delay = match &target {
-            live_send::LiveSendTarget::Agent => crate::agents::send_keys_enter_delay(&inst.tool),
-            live_send::LiveSendTarget::Terminal
-            | live_send::LiveSendTarget::ContainerTerminal
-            | live_send::LiveSendTarget::Tool(_) => 0,
+        let delivered = if matches!(target, live_send::LiveSendTarget::Agent) {
+            inst.send_prompt(message).map(|_| ())
+        } else {
+            tmux_session.send_keys_with_delay(message, 0)
         };
-        if let Err(e) = tmux_session.send_keys_with_delay(message, delay) {
+        if let Err(e) = delivered {
             self.info_dialog = Some(InfoDialog::new(
                 "Send Failed",
                 &format!("Failed to send message: {}", e),

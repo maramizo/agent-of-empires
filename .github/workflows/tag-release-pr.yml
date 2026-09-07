@@ -59,8 +59,8 @@ jobs:
       - name: Verify Cargo.lock agrees with Cargo.toml
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          if ! grep -A2 '^name = "agent-of-empires"$' Cargo.lock | grep -q "^version = \"$VERSION\"$"; then
-            echo "::error::Cargo.lock does not contain agent-of-empires version $VERSION"
+          if ! grep -A2 '^name = "agent-of-empires-2"$' Cargo.lock | grep -q "^version = \"$VERSION\"$"; then
+            echo "::error::Cargo.lock does not contain agent-of-empires-2 version $VERSION"
             head -10 Cargo.lock
             exit 1
           fi

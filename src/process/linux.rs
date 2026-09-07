@@ -482,3 +482,46 @@ full avg10=0.10 avg60=0.20 avg300=0.30 total=42
         assert_eq!(parse_psi_some_avg10("full avg10=5.0 total=9"), None);
     }
 }
+
+/// Linux annotates /proc/self/exe after an atomic executable replacement.
+pub(super) fn replacement_executable_path(path: std::path::PathBuf) -> std::path::PathBuf {
+    use std::os::unix::ffi::OsStrExt;
+    use std::os::unix::fs::PermissionsExt;
+
+    if path.exists() {
+        return path;
+    }
+    if let Some(bytes) = path.as_os_str().as_bytes().strip_suffix(b" (deleted)") {
+        let replacement = Path::new(std::ffi::OsStr::from_bytes(bytes));
+        if replacement
+            .metadata()
+            .is_ok_and(|m| m.is_file() && m.permissions().mode() & 0o111 != 0)
+        {
+            return replacement.to_path_buf();
+        }
+    }
+    path
+}
+
+#[cfg(test)]
+mod replacement_executable_tests {
+    use super::*;
+    use std::os::unix::fs::PermissionsExt;
+
+    #[test]
+    fn replaced_executable_uses_installed_path_only_when_executable() {
+        let temp = tempfile::tempdir().unwrap();
+        let installed = temp.path().join("aoe");
+        let deleted = temp.path().join("aoe (deleted)");
+        assert_eq!(replacement_executable_path(deleted.clone()), deleted);
+        fs::write(&installed, "test").unwrap();
+        fs::set_permissions(&installed, fs::Permissions::from_mode(0o600)).unwrap();
+        assert_eq!(replacement_executable_path(deleted.clone()), deleted);
+        fs::set_permissions(&installed, fs::Permissions::from_mode(0o700)).unwrap();
+        assert_eq!(replacement_executable_path(deleted.clone()), installed);
+        // A real filename ending in the suffix is not a deleted inode.
+        fs::write(&deleted, "test").unwrap();
+        assert_eq!(replacement_executable_path(deleted.clone()), deleted);
+        assert_eq!(replacement_executable_path(installed.clone()), installed);
+    }
+}

@@ -26,7 +26,8 @@ impl Instance {
         let exclusion = self.retroactive_capture_exclusion_set();
         let result = match backend {
             crate::agents::SessionCaptureBackend::Claude
-            | crate::agents::SessionCaptureBackend::HookSidecar => {
+            | crate::agents::SessionCaptureBackend::HookSidecar
+            | crate::agents::SessionCaptureBackend::Codex => {
                 crate::hooks::read_hook_session_id_any_age(&self.id)
             }
             crate::agents::SessionCaptureBackend::Pi => self.pi_published_session_id(true),
@@ -52,8 +53,7 @@ impl Instance {
                     capture_omp_session_id(&metadata, &exclusion, &tmux_session_name).ok()
                 }
             }
-            crate::agents::SessionCaptureBackend::Codex
-            | crate::agents::SessionCaptureBackend::Gemini
+            crate::agents::SessionCaptureBackend::Gemini
             | crate::agents::SessionCaptureBackend::Hermes
             | crate::agents::SessionCaptureBackend::Kimi
             | crate::agents::SessionCaptureBackend::PrimeAgent

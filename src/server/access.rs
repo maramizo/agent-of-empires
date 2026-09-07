@@ -399,6 +399,12 @@ pub(super) const CITYHALL_MUTATION_ALLOW: &[(&str, &str)] = &[
 /// #7.
 #[cfg(test)]
 pub(super) const CITYHALL_MUTATION_DENY: &[(&str, &str)] = &[
+    ("POST", "/api/monitors"),
+    ("PATCH", "/api/monitors/{id}"),
+    ("DELETE", "/api/monitors/{id}"),
+    ("POST", "/api/monitors/{id}/run"),
+    ("POST", "/api/monitors/{id}/cancel"),
+    ("POST", "/api/sessions/onboard"),
     // Terminal surface.
     ("POST", "/api/sessions/{id}/ensure"),
     ("POST", "/api/sessions/{id}/send"),

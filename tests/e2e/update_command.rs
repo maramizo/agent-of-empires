@@ -1,4 +1,4 @@
-//! E2E tests for `aoe update`.
+//! E2E tests for `aoe2 update`.
 
 use serial_test::serial;
 use std::fs;
@@ -6,10 +6,10 @@ use std::os::unix::fs::PermissionsExt;
 use std::process::Command;
 
 fn aoe_binary() -> &'static str {
-    env!("CARGO_BIN_EXE_aoe")
+    env!("CARGO_BIN_EXE_aoe2")
 }
 
-/// Test that `aoe update --dry-run` invokes `brew list aoe` during installation detection.
+/// Test that `aoe2 update --dry-run` invokes `brew list aoe2` during installation detection.
 ///
 /// Requires: GitHub API access (check_for_update is called with force=true) and a newer
 /// version than 1.4.6 to be published. In CI where both are available, the test validates
@@ -26,7 +26,7 @@ fn update_calls_brew_when_method_is_homebrew() {
     fs::write(
         &brew_shim,
         format!(
-            "#!/bin/sh\necho \"$@\" >> {}\nif [ \"$1\" = \"list\" ]; then\n  echo /usr/local/bin/aoe\n  exit 0\nfi\nexit 0\n",
+            "#!/bin/sh\necho \"$@\" >> {}\nif [ \"$1\" = \"list\" ]; then\n  echo /usr/local/bin/aoe2\n  exit 0\nfi\nexit 0\n",
             brew_log.display()
         ),
     )
@@ -54,8 +54,8 @@ fn update_calls_brew_when_method_is_homebrew() {
     )
     .unwrap();
 
-    // Run `aoe update --dry-run` with the shim on PATH and isolated XDG_CONFIG_HOME.
-    // The detection path probes brew via `brew list aoe` regardless of dry-run.
+    // Run `aoe2 update --dry-run` with the shim on PATH and isolated XDG_CONFIG_HOME.
+    // The detection path probes brew via `brew list aoe2` regardless of dry-run.
     let path = format!(
         "{}:{}",
         shim_dir.path().display(),
@@ -67,13 +67,13 @@ fn update_calls_brew_when_method_is_homebrew() {
         .env("PATH", &path)
         .env("XDG_CONFIG_HOME", config_home.path())
         .output()
-        .expect("running aoe update --dry-run");
+        .expect("running aoe2 update --dry-run");
 
-    // The detection probe ran `brew list aoe`, so the log must exist.
+    // The detection probe ran `brew list aoe2`, so the log must exist.
     let log = fs::read_to_string(&brew_log).unwrap_or_default();
     assert!(
-        log.contains("list aoe"),
-        "expected `brew list aoe` to be invoked; log was: {log:?}\nstdout: {}\nstderr: {}",
+        log.contains("list aoe2"),
+        "expected `brew list aoe2` to be invoked; log was: {log:?}\nstdout: {}\nstderr: {}",
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr),
     );
@@ -82,22 +82,22 @@ fn update_calls_brew_when_method_is_homebrew() {
 #[tokio::test]
 #[serial]
 async fn update_via_tarball_replaces_binary_at_target_path() {
-    // Build a minimal tar.gz containing a dummy `aoe-{platform}` script
+    // Build a minimal tar.gz containing a dummy `aoe2-{platform}` script
     // that prints the expected version when run with --version.
     let workdir = tempfile::tempdir().unwrap();
     let platform = agent_of_empires::update::install::current_platform_string().unwrap();
-    let dummy = workdir.path().join(format!("aoe-{platform}"));
-    fs::write(&dummy, "#!/bin/sh\necho 'aoe 99.99.99'\n").unwrap();
+    let dummy = workdir.path().join(format!("aoe2-{platform}"));
+    fs::write(&dummy, "#!/bin/sh\necho 'aoe2 99.99.99'\n").unwrap();
     fs::set_permissions(&dummy, fs::Permissions::from_mode(0o755)).unwrap();
 
-    let tarball = workdir.path().join(format!("aoe-{platform}.tar.gz"));
+    let tarball = workdir.path().join(format!("aoe2-{platform}.tar.gz"));
     let tar_status = Command::new("tar")
         .args([
             "czf",
             tarball.to_str().unwrap(),
             "-C",
             workdir.path().to_str().unwrap(),
-            &format!("aoe-{platform}"),
+            &format!("aoe2-{platform}"),
         ])
         .status()
         .unwrap();
@@ -109,7 +109,7 @@ async fn update_via_tarball_replaces_binary_at_target_path() {
     std_listener.set_nonblocking(true).unwrap();
     let port = std_listener.local_addr().unwrap().port();
     let tarball_bytes = fs::read(&tarball).unwrap();
-    let path_for_route = format!("/v99.99.99/aoe-{platform}.tar.gz");
+    let path_for_route = format!("/v99.99.99/aoe2-{platform}.tar.gz");
     let app = axum::Router::new().route(
         &path_for_route,
         axum::routing::get(move || {
@@ -124,7 +124,7 @@ async fn update_via_tarball_replaces_binary_at_target_path() {
 
     // Pre-place a target binary at a writable path.
     let install_dir = tempfile::tempdir().unwrap();
-    let target = install_dir.path().join("aoe");
+    let target = install_dir.path().join("aoe2");
     fs::write(&target, "old binary").unwrap();
     fs::set_permissions(&target, fs::Permissions::from_mode(0o755)).unwrap();
 

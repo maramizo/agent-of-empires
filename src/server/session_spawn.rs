@@ -64,6 +64,7 @@ pub(crate) struct StructuredSessionSpec {
     pub agent_name: Option<String>,
     pub agent_model: Option<String>,
     pub agent_effort: Option<String>,
+    pub fast_mode: Option<bool>,
     pub import_acp_session_id: Option<String>,
     pub fork_seed: Option<crate::session::ForkSeed>,
 }
@@ -145,6 +146,7 @@ pub(crate) async fn spawn_structured_session(
             agent_name,
             agent_model,
             agent_effort,
+            fast_mode,
             import_acp_session_id,
             fork_seed,
         } = spec;
@@ -300,7 +302,7 @@ pub(crate) async fn spawn_structured_session(
                     agent_effort,
                 );
             instance.agent_model = resolved_model;
-            instance.acp_effort = explicit_effort;
+            instance.acp_effort = explicit_effort.clone();
             // Don't trust the client's capability decision. Re-resolve
             // whether this agent can actually run in structured view; a custom
             // agent without an `agent_acp_cmd` (or any non-ACP tool)
@@ -357,7 +359,11 @@ pub(crate) async fn spawn_structured_session(
                 // Terminal sessions keep only an explicitly requested model,
                 // never an ACP-derived default (agent_model is ACP-only).
                 instance.agent_model = explicit_model;
-                // acp_effort is ACP-only too: nothing applies it in tmux mode.
+                instance.terminal_launch = crate::session::launch_options::LaunchOptions {
+                    model: instance.agent_model.clone(), effort: explicit_effort, fast_mode,
+                };
+                instance.terminal_launch.validate(&instance.tool, false, instance.has_command_override())?;
+                // Structured effort is separate from terminal launch choices.
                 instance.acp_effort = None;
             }
 

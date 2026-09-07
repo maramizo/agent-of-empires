@@ -195,66 +195,24 @@ async fn native_enqueue(
         )
             .into_response();
     }
-    let resolved = tokio::task::spawn_blocking(move || {
-        if !instance.tmux_session().ok()?.exists() {
-            return None;
+    let text = req.text.clone();
+    match tokio::task::spawn_blocking(move || instance.queue_codex_prompt(&text)).await {
+        Ok(Ok(delivery)) => {
+            let mut result = serde_json::to_value(delivery).unwrap();
+            result["message_id"] = serde_json::json!(req.id);
+            Json(result).into_response()
         }
-        // Only the pane's own hook record can identify the current thread.
-        // A cwd lookup or an older persisted resume id could target another turn.
-        let thread = crate::hooks::read_hook_session_id_any_age(&instance.id)?;
-        let thread = uuid::Uuid::parse_str(&thread).ok()?.to_string();
-        let environment = crate::session::environment::resolve_host_environment_pairs(
-            &instance.resolved_host_environment(),
-        );
-        Some((thread, instance.project_path, environment))
-    })
-    .await;
-    let Ok(Some((thread, cwd, environment))) = resolved else {
-        return (StatusCode::CONFLICT, "Codex thread identity is not available for this live pane; enable AoE Codex hooks and start the session before queueing").into_response();
-    };
-    match run_native_queue("codex", &thread, &req.text, &cwd, environment).await {
-        Ok(()) => Json(serde_json::json!({
-            "disposition": "queued", "backend": "codex", "thread_id": thread,
-            "message_id": req.id, "idempotent": false,
-            "message": "Accepted by Codex. message_id is correlation only; retries can duplicate delivery. Native pending queue listing is unavailable."
-        })).into_response(),
-        Err(message) => (StatusCode::BAD_GATEWAY, Json(serde_json::json!({"error": message}))).into_response(),
+        Ok(Err(error)) => (
+            StatusCode::BAD_GATEWAY,
+            Json(serde_json::json!({"error":"delivery_failed", "message":error.to_string()})),
+        )
+            .into_response(),
+        Err(error) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({"error":error.to_string()})),
+        )
+            .into_response(),
     }
-}
-
-async fn run_native_queue(
-    executable: &str,
-    thread: &str,
-    text: &str,
-    cwd: &str,
-    environment: Vec<(String, String)>,
-) -> Result<(), String> {
-    let mut command = tokio::process::Command::new(executable);
-    command
-        .args(["queue", "--thread", thread])
-        .arg(format!("--message={text}"))
-        .current_dir(cwd)
-        .envs(environment)
-        .stdin(std::process::Stdio::null())
-        .kill_on_drop(true);
-    let output = tokio::time::timeout(std::time::Duration::from_secs(30), command.output())
-        .await
-        .map_err(|_| {
-            "Codex queue timed out; delivery is unknown. Inspect the worker before retrying."
-                .to_string()
-        })?
-        .map_err(|e| format!("Could not execute codex queue: {e}"))?;
-    if !output.status.success() {
-        return Err(format!(
-            "codex queue failed ({}): {}",
-            output.status,
-            String::from_utf8_lossy(&output.stderr)
-                .chars()
-                .take(2000)
-                .collect::<String>()
-        ));
-    }
-    Ok(())
 }
 
 /// Buffer already-validated attachment blobs under `prompt_id` and append the
@@ -460,35 +418,38 @@ mod tests {
             vec![
                 ("CODEX_HOME".into(), "/custom/codex".into()),
                 ("QUEUE_TEST_EXIT".into(), code.into()),
+                (
+                    "AOE_CODEX_QUEUE_ENDPOINT".into(),
+                    "unix:///private/pane.sock".into(),
+                ),
             ]
         };
-        run_native_queue(
+        crate::session::prompt_delivery::run_codex_queue(
             executable.to_str().unwrap(),
             "thread-id",
             message,
             root.path().to_str().unwrap(),
             environment("0"),
         )
-        .await
         .unwrap();
         assert_eq!(
             std::fs::read_to_string(root.path().join("args")).unwrap(),
-            format!("queue\n--thread\nthread-id\n--message={message}\n")
+            format!("--remote\nunix:///private/pane.sock\nqueue\n--thread\nthread-id\n--message={message}\n")
         );
         assert_eq!(
             std::fs::read_to_string(root.path().join("home")).unwrap(),
             "/custom/codex"
         );
         assert!(!root.path().join("unexpected").exists());
-        assert!(run_native_queue(
+        assert!(crate::session::prompt_delivery::run_codex_queue(
             executable.to_str().unwrap(),
             "thread-id",
             message,
             root.path().to_str().unwrap(),
             environment("7")
         )
-        .await
         .unwrap_err()
+        .to_string()
         .contains("failed"));
     }
 

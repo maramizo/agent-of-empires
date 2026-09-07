@@ -3,7 +3,7 @@
 use super::discovery::get_sounds_dir;
 
 const GITHUB_SOUNDS_BASE_URL: &str =
-    "https://raw.githubusercontent.com/agent-of-empires/agent-of-empires/main/bundled_sounds";
+    "https://raw.githubusercontent.com/maramizo/agent-of-empires-2/main/bundled_sounds";
 
 /// List of bundled sound files available for download
 const BUNDLED_SOUND_FILES: &[&str] = &[

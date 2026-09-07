@@ -226,6 +226,7 @@ impl Instance {
         // Same for the pinned model: `claude-opus-4-7` means nothing to codex,
         // and it is re-injected on every spawn, so it has to go too.
         self.agent_model = None;
+        self.terminal_launch = Default::default();
         // `acp_mode_id` deliberately stays. It is the session's approval
         // posture, and clearing it does not fall back to "default": the spawn
         // path's mode gate is `acp_mode_id.is_some() || yolo_mode`, whose

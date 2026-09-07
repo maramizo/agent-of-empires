@@ -13,6 +13,7 @@ pub struct SessionResponse {
     pub artifact_dir: String,
     pub group_path: String,
     pub tool: String,
+    pub launch_options: crate::session::launch_options::LaunchOptions,
     pub status: String,
     /// True when the session's structured-view worker was auto-stopped for
     /// inactivity (resumable/dormant), as opposed to a deliberate Stop. Lets
@@ -350,6 +351,15 @@ impl SessionResponse {
                 .unwrap_or_default(),
             group_path: inst.group_path.clone(),
             tool: inst.tool.clone(),
+            launch_options: if inst.is_structured() {
+                crate::session::launch_options::LaunchOptions {
+                    model: inst.agent_model.clone(),
+                    effort: inst.acp_effort.clone(),
+                    fast_mode: None,
+                }
+            } else {
+                inst.terminal_launch.clone()
+            },
             status: inst.status.wire_str().to_string(),
             dormant: inst.is_shown_dormant(),
             yolo_mode: inst.yolo_mode,

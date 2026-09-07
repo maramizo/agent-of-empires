@@ -101,7 +101,7 @@ function toggleMobileSidebar(btn) {
 // Fetch GitHub star count (only when the badge is on the page; it isn't on docs pages)
 const starCountEl = document.getElementById('star-count');
 if (starCountEl) {
-  fetch('https://api.github.com/repos/agent-of-empires/agent-of-empires')
+  fetch('https://api.github.com/repos/maramizo/agent-of-empires-2')
     .then(res => {
       if (!res.ok) throw new Error('star count fetch failed: ' + res.status);
       return res.json();

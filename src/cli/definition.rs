@@ -40,11 +40,11 @@ use super::worktree::WorktreeCommands;
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[derive(Parser)]
-#[command(name = "aoe")]
+#[command(name = "aoe2")]
 #[command(about = "Terminal session manager for AI coding agents")]
 #[command(version = VERSION)]
 #[command(
-    long_about = "Agent of Empires (aoe) is a terminal session manager that uses tmux to help \
+    long_about = "Agent of Empires 2 (aoe2) is a terminal session manager that uses tmux to help \
     you manage and monitor AI coding agents like Claude Code and OpenCode.\n\n\
     Run without arguments to launch the TUI dashboard."
 )]
@@ -230,7 +230,7 @@ pub enum Commands {
     /// Uninstall Agent of Empires
     Uninstall(UninstallArgs),
 
-    /// Update aoe to the latest release
+    /// Update aoe2 to the latest release
     Update(UpdateArgs),
 
     /// Run pending data migrations now, showing progress. A sandboxed session

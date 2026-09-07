@@ -67,7 +67,7 @@ async fn install_bundled() -> Result<()> {
             eprintln!("  • Try again later if GitHub is unavailable");
             eprintln!("  • You can manually download sounds from:");
             eprintln!(
-                "    https://github.com/agent-of-empires/agent-of-empires/tree/main/bundled_sounds"
+                "    https://github.com/maramizo/agent-of-empires-2/tree/main/bundled_sounds"
             );
             Err(e)
         }
